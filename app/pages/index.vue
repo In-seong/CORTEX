@@ -1,7 +1,6 @@
 <script setup lang="ts">
 const { data: stats, refresh: refreshStats } = await useFetch('/api/system/stats')
 const { data: projects, refresh: refreshProjects } = await useFetch('/api/projects')
-const scanning = ref(false)
 const searchQuery = ref('')
 const selectedCategory = ref<string | null>(null)
 const router = useRouter()
@@ -12,15 +11,8 @@ function openClaude(project: any) {
   router.push('/workspace')
 }
 
-async function scanProjects() {
-  scanning.value = true
-  try {
-    await $fetch('/api/projects/scan', { method: 'POST' })
-    await refreshProjects()
-    await refreshStats()
-  } finally {
-    scanning.value = false
-  }
+function goSettings() {
+  router.push('/settings')
 }
 
 const categories = computed(() => {
@@ -57,11 +49,6 @@ const categoryIcons: Record<string, string> = {
   'office': '🏢', 'erp': '📋', 'etc': '📁',
 }
 
-onMounted(() => {
-  if (!projects.value || (projects.value as any[]).length === 0) {
-    scanProjects()
-  }
-})
 </script>
 
 <template>
@@ -77,12 +64,10 @@ onMounted(() => {
           </p>
         </div>
         <button
-          @click="scanProjects"
-          :disabled="scanning"
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-neon-indigo text-white hover:bg-neon-indigo-deep transition-colors disabled:opacity-50"
+          @click="goSettings"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border border-brain-border text-brain-text-secondary hover:text-brain-text hover:border-brain-border-light transition-colors"
         >
-          <svg v-if="scanning" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-          {{ scanning ? '스캔 중...' : '프로젝트 스캔' }}
+          ⚙ 프로젝트 관리
         </button>
       </div>
 
@@ -150,10 +135,10 @@ onMounted(() => {
           />
         </div>
 
-        <div v-if="filteredProjects.length === 0 && !scanning" class="text-center py-16">
-          <p class="text-brain-muted text-sm mb-3">프로젝트가 없습니다</p>
-          <button @click="scanProjects" class="text-neon-indigo hover:underline text-sm">
-            프로젝트 스캔하기
+        <div v-if="filteredProjects.length === 0" class="text-center py-16">
+          <p class="text-brain-muted text-sm mb-3">등록된 프로젝트가 없습니다</p>
+          <button @click="goSettings" class="text-neon-indigo hover:underline text-sm">
+            프로젝트 관리에서 추가하기
           </button>
         </div>
       </div>

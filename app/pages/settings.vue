@@ -2,7 +2,18 @@
 const projects = ref<any[]>([])
 
 async function refresh() {
-  projects.value = await $fetch('/api/projects', { query: { include_hidden: 'true' } }) as any[]
+  projects.value = await $fetch('/api/projects', { query: { all: 'true' } }) as any[]
+}
+
+const scanning = ref(false)
+async function rescan() {
+  scanning.value = true
+  try {
+    await $fetch('/api/projects/scan', { method: 'POST' })
+    await refresh()
+  } finally {
+    scanning.value = false
+  }
 }
 
 await refresh()
@@ -44,21 +55,21 @@ const filteredProjects = computed(() => {
       p.category.toLowerCase().includes(q)
     )
   }
-  result.sort((a, b) => a.is_hidden - b.is_hidden || a.name.localeCompare(b.name))
+  result.sort((a, b) => (b.is_active - a.is_active) || a.name.localeCompare(b.name))
   return result
 })
 
-const hiddenCount = computed(() => {
+const activeCount = computed(() => {
   if (!projects.value) return 0
-  return projects.value.filter(p => p.is_hidden).length
+  return projects.value.filter(p => p.is_active).length
 })
 
-async function toggleHidden(project: any) {
+async function toggleActive(project: any) {
   saving.value = project.id
   try {
-    await $fetch(`/api/projects/${project.id}`, {
-      method: 'PUT',
-      body: { is_hidden: !project.is_hidden }
+    await $fetch('/api/projects/activate', {
+      method: 'POST',
+      body: { id: project.id, active: project.is_active ? 0 : 1 }
     })
     await refresh()
   } finally {
@@ -89,14 +100,13 @@ async function saveCategory(project: any) {
   }
 }
 
-async function bulkHide(hidden: boolean) {
-  const targets = filteredProjects.value.filter(p => p.is_hidden !== hidden)
-  for (const p of targets) {
-    await $fetch(`/api/projects/${p.id}`, {
-      method: 'PUT',
-      body: { is_hidden: hidden }
-    })
-  }
+async function bulkActivate(active: boolean) {
+  const targets = filteredProjects.value.filter(p => !!p.is_active !== active)
+  if (!targets.length) return
+  await $fetch('/api/projects/activate', {
+    method: 'POST',
+    body: { ids: targets.map(p => p.id), active: active ? 1 : 0 }
+  })
   await refresh()
 }
 </script>
@@ -105,11 +115,20 @@ async function bulkHide(hidden: boolean) {
   <div class="h-full overflow-y-auto">
     <div class="max-w-5xl mx-auto p-4 sm:p-6 space-y-4">
       <!-- Title -->
-      <div>
-        <h2 class="text-lg font-semibold">프로젝트 설정</h2>
-        <p class="text-xs text-brain-muted mt-0.5">
-          {{ projects.length }} 프로젝트 · {{ hiddenCount }} 숨김
-        </p>
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-semibold">프로젝트 관리</h2>
+          <p class="text-xs text-brain-muted mt-0.5">
+            등록됨 {{ activeCount }} · 후보 {{ projects.length - activeCount }} · 전체 {{ projects.length }}
+          </p>
+        </div>
+        <button
+          @click="rescan"
+          :disabled="scanning"
+          class="px-3 py-1.5 rounded-md text-xs font-medium border border-brain-border text-brain-text-secondary hover:text-brain-text hover:border-brain-border-light transition-colors disabled:opacity-50 shrink-0"
+        >
+          {{ scanning ? '스캔 중...' : '⟳ 새 프로젝트 스캔' }}
+        </button>
       </div>
 
       <!-- Filters -->
@@ -150,16 +169,16 @@ async function bulkHide(hidden: boolean) {
           <!-- Bulk Actions -->
           <div class="flex items-center gap-1.5 ml-auto">
             <button
-              @click="bulkHide(true)"
-              class="px-2.5 py-1.5 rounded-md text-xs text-brain-muted hover:text-neon-amber border border-brain-border hover:border-neon-amber/30 transition-colors"
-            >
-              필터 결과 모두 숨김
-            </button>
-            <button
-              @click="bulkHide(false)"
+              @click="bulkActivate(true)"
               class="px-2.5 py-1.5 rounded-md text-xs text-brain-muted hover:text-neon-emerald border border-brain-border hover:border-neon-emerald/30 transition-colors"
             >
-              필터 결과 모두 표시
+              필터 결과 모두 등록
+            </button>
+            <button
+              @click="bulkActivate(false)"
+              class="px-2.5 py-1.5 rounded-md text-xs text-brain-muted hover:text-neon-amber border border-brain-border hover:border-neon-amber/30 transition-colors"
+            >
+              모두 등록 해제
             </button>
           </div>
         </div>
@@ -176,21 +195,21 @@ async function bulkHide(hidden: boolean) {
                 <th class="text-left px-4 py-2.5 text-[10px] font-semibold text-brain-muted tracking-[0.08em] uppercase">경로</th>
                 <th class="text-left px-4 py-2.5 text-[10px] font-semibold text-brain-muted tracking-[0.08em] uppercase">카테고리</th>
                 <th class="text-left px-4 py-2.5 text-[10px] font-semibold text-brain-muted tracking-[0.08em] uppercase">기술 스택</th>
-                <th class="text-center px-4 py-2.5 text-[10px] font-semibold text-brain-muted tracking-[0.08em] uppercase">표시/숨김</th>
+                <th class="text-center px-4 py-2.5 text-[10px] font-semibold text-brain-muted tracking-[0.08em] uppercase">등록</th>
               </tr>
             </thead>
             <tbody>
               <tr
                 v-for="project in filteredProjects" :key="project.id"
                 class="border-b border-brain-border/50 transition-colors hover:bg-brain-border"
-                :class="{ 'opacity-40': project.is_hidden }"
+                :class="{ 'opacity-40': !project.is_active }"
               >
                 <!-- Status Dot -->
                 <td class="px-4 py-2.5">
                   <div class="flex items-center justify-center">
                     <div
                       class="w-2 h-2 rounded-full"
-                      :class="project.is_hidden ? 'bg-brain-muted/40' : 'bg-neon-emerald'"
+                      :class="project.is_active ? 'bg-neon-emerald' : 'bg-brain-muted/40'"
                     />
                   </div>
                 </td>
@@ -263,14 +282,14 @@ async function bulkHide(hidden: boolean) {
                 <td class="px-4 py-2.5">
                   <div class="flex items-center justify-center">
                     <button
-                      @click="toggleHidden(project)"
+                      @click="toggleActive(project)"
                       :disabled="saving === project.id"
                       class="relative w-10 h-[22px] rounded-full transition-colors duration-200 focus:outline-none"
-                      :class="project.is_hidden ? 'bg-brain-border' : 'bg-neon-indigo/60'"
+                      :class="project.is_active ? 'bg-neon-indigo/60' : 'bg-brain-border'"
                     >
                       <div
                         class="absolute top-0.5 w-[18px] h-[18px] rounded-full bg-white transition-all duration-200"
-                        :class="project.is_hidden ? 'left-0.5 opacity-60' : 'left-[20px]'"
+                        :class="project.is_active ? 'left-[20px]' : 'left-0.5 opacity-60'"
                       />
                     </button>
                   </div>
