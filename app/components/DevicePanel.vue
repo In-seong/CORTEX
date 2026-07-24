@@ -7,7 +7,20 @@ const router = useRouter()
 const { openProject } = useWorkspace()
 
 const { data, refresh } = await useFetch('/api/devices')
-const devices = computed(() => (data.value as any)?.devices || [])
+const { data: buildTarget } = await useFetch('/api/devices/build-target', {
+  query: { project_id: props.project.id },
+})
+const target = computed(() => (buildTarget.value as any) || { android: false, ios: false, kind: '' })
+const isApp = computed(() => target.value.android || target.value.ios)
+
+// 이 프로젝트가 빌드 가능한 플랫폼의 디바이스만
+const devices = computed(() => {
+  const all = (data.value as any)?.devices || []
+  return all.filter((d: any) =>
+    (d.platform === 'android' && target.value.android) ||
+    (d.platform === 'ios' && target.value.ios)
+  )
+})
 const busy = ref('')
 const msg = ref('')
 
@@ -49,9 +62,13 @@ async function buildTo(device: any) {
 </script>
 
 <template>
-  <div class="glass-card p-4">
+  <!-- 앱 프로젝트(Flutter/Capacitor/Android/iOS)에서만 표시 -->
+  <div v-if="isApp" class="glass-card p-4">
     <div class="flex items-center justify-between mb-2.5">
-      <h3 class="text-[10px] font-semibold text-brain-muted uppercase tracking-[0.08em]">연결된 디바이스</h3>
+      <h3 class="text-[10px] font-semibold text-brain-muted uppercase tracking-[0.08em]">
+        디바이스 빌드
+        <span class="ml-1 text-neon-indigo normal-case tracking-normal">{{ target.kind }}</span>
+      </h3>
       <button
         @click="refresh()"
         class="w-6 h-6 rounded flex items-center justify-center text-xs text-brain-muted hover:text-brain-text hover:bg-brain-border transition-colors"
@@ -83,7 +100,7 @@ async function buildTo(device: any) {
       </div>
     </div>
     <p v-else class="text-xs text-brain-muted/60">
-      연결된 폰 없음 — USB로 연결하면 여기 표시됩니다 (Android: USB 디버깅 허용 필요)
+      연결된 {{ target.android && !target.ios ? 'Android' : !target.android && target.ios ? 'iOS' : '' }} 폰 없음 — USB로 연결하면 표시됩니다{{ target.android ? ' (Android: USB 디버깅 허용)' : '' }}
     </p>
     <p v-if="msg" class="text-[11px] text-neon-amber mt-2">{{ msg }}</p>
   </div>
