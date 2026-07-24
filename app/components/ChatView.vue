@@ -30,6 +30,10 @@ const autoScroll = ref(true)
 let timer: ReturnType<typeof setInterval> | null = null
 let lastJson = ''
 
+// 인터랙티브 프롬프트(compact/resume/권한) 감지 — transcript에 안 남으므로 PTY 화면을 본다
+const needsInput = ref(false)
+const screenText = ref('')
+
 async function poll() {
   try {
     const res = await $fetch('/api/claude/transcript', {
@@ -42,6 +46,27 @@ async function poll() {
       if (autoScroll.value) scrollToBottom()
     }
   } catch {}
+  await pollScreen()
+}
+
+async function pollScreen() {
+  const termId = localStorage.getItem(`cortex-term:${props.projectPath}:claude`)
+  if (!termId) { needsInput.value = false; return }
+  try {
+    const res = await $fetch(`/api/terminal/${termId}/screen`) as any
+    needsInput.value = !!res.needsInput
+    if (res.needsInput) screenText.value = res.text || ''
+  } catch {
+    needsInput.value = false
+  }
+}
+
+// PTY로 키 전송 (프롬프트 응답)
+async function sendKey(data: string) {
+  const termId = localStorage.getItem(`cortex-term:${props.projectPath}:claude`)
+  if (!termId) return
+  await $fetch(`/api/terminal/${termId}`, { method: 'POST', body: { type: 'input', data } }).catch(() => {})
+  setTimeout(pollScreen, 500)
 }
 
 function scrollToBottom() {
@@ -107,6 +132,7 @@ const toolIcons: Record<string, string> = {
       <div class="flex items-center gap-2">
         <span class="text-sm font-medium">💬 채팅</span>
         <span class="text-[11px] text-brain-muted font-mono truncate">{{ projectName }}</span>
+        <span v-if="needsInput" class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-neon-amber/15 text-neon-amber border border-neon-amber/30 animate-pulse">입력 대기</span>
       </div>
       <div class="flex items-center gap-2">
         <button
@@ -120,6 +146,27 @@ const toolIcons: Record<string, string> = {
           :class="showTerminal ? 'bg-neon-cyan/15 text-neon-cyan border-neon-cyan/30' : 'border-brain-border text-brain-muted hover:text-brain-text'"
           title="권한 응답 등 TUI 직접 조작이 필요할 때"
         >🖥 터미널 {{ showTerminal ? '접기' : '보기' }}</button>
+      </div>
+    </div>
+
+    <!-- 인터랙티브 프롬프트 배너 (compact/resume/권한 등 — 채팅에서 바로 응답) -->
+    <div v-if="needsInput && !showTerminal" class="shrink-0 border-b border-neon-amber/30 bg-neon-amber/10 px-4 py-3">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-sm">⚠️</span>
+        <span class="text-xs font-semibold text-neon-amber">Claude가 선택을 기다리고 있습니다</span>
+      </div>
+      <pre v-if="screenText" class="text-[11px] font-mono text-brain-text-secondary whitespace-pre-wrap max-h-40 overflow-y-auto scrollbar-sleek bg-brain-bg/60 rounded-md p-2 mb-2">{{ screenText }}</pre>
+      <div class="flex flex-wrap items-center gap-1.5">
+        <button @click="sendKey('\r')" class="px-3 py-1.5 rounded-md text-xs font-medium bg-neon-indigo text-white hover:bg-neon-indigo-deep transition-colors">↵ Enter (확인)</button>
+        <button @click="sendKey('\x1b[A')" class="px-2.5 py-1.5 rounded-md text-xs border border-brain-border hover:bg-brain-border transition-colors">↑</button>
+        <button @click="sendKey('\x1b[B')" class="px-2.5 py-1.5 rounded-md text-xs border border-brain-border hover:bg-brain-border transition-colors">↓</button>
+        <button @click="sendKey('1')" class="px-2.5 py-1.5 rounded-md text-xs border border-brain-border hover:bg-brain-border transition-colors">1</button>
+        <button @click="sendKey('2')" class="px-2.5 py-1.5 rounded-md text-xs border border-brain-border hover:bg-brain-border transition-colors">2</button>
+        <button @click="sendKey('3')" class="px-2.5 py-1.5 rounded-md text-xs border border-brain-border hover:bg-brain-border transition-colors">3</button>
+        <button @click="sendKey('y')" class="px-2.5 py-1.5 rounded-md text-xs border border-brain-border hover:bg-brain-border transition-colors">y</button>
+        <button @click="sendKey('n')" class="px-2.5 py-1.5 rounded-md text-xs border border-brain-border hover:bg-brain-border transition-colors">n</button>
+        <button @click="sendKey('\x1b')" class="px-2.5 py-1.5 rounded-md text-xs border border-brain-border hover:bg-brain-border transition-colors">Esc</button>
+        <button @click="showTerminal = true" class="ml-auto px-2.5 py-1.5 rounded-md text-xs text-neon-cyan hover:underline">🖥 터미널에서 직접</button>
       </div>
     </div>
 
