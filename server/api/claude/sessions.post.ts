@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
 
   if (!projectPath) throw createError({ statusCode: 400, message: 'projectPath required' })
 
-  const projectKey = projectPath.replace(/\//g, '-')
+  const projectKey = projectPath.replace(/[^a-zA-Z0-9]/g, '-')
   const sessionsDir = join(homedir(), '.claude', 'projects', projectKey)
 
   try {

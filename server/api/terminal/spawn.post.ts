@@ -1,14 +1,13 @@
 import * as pty from 'node-pty'
 import { randomUUID } from 'crypto'
 import { readdirSync, existsSync } from 'fs'
-import { join } from 'path'
-import { homedir } from 'os'
+import { claudeProjectDir } from '../../utils/claude-paths'
 
 // claude -c 는 이전 대화가 없으면 "No conversation found to continue"로 즉시 종료된다.
 // 해당 cwd의 transcript(.jsonl)가 하나도 없으면 -c 를 제거해 새 대화로 시작.
 function adjustClaudeContinue(command: string, cwd: string): string {
   if (!command || !/\bclaude\b/.test(command) || !/\s-c(\s|$)/.test(command)) return command
-  const dir = join(homedir(), '.claude', 'projects', cwd.replace(/\//g, '-'))
+  const dir = claudeProjectDir(cwd)
   try {
     if (existsSync(dir) && readdirSync(dir).some(f => f.endsWith('.jsonl'))) return command
   } catch {}

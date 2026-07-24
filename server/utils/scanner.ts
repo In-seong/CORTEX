@@ -108,7 +108,7 @@ function getGitInfo(dirPath: string): { branch: string; dirtyCount: number } {
 }
 
 function getClaudeSessionInfo(projectPath: string): { count: number; sizeMb: number } {
-  const slug = projectPath.replace(/\//g, '-')
+  const slug = projectPath.replace(/[^a-zA-Z0-9]/g, '-')
   const sessionDir = join(HOME, '.claude', 'projects', slug)
   if (!existsSync(sessionDir)) return { count: 0, sizeMb: 0 }
 
@@ -127,7 +127,7 @@ function getClaudeSessionInfo(projectPath: string): { count: number; sizeMb: num
 }
 
 function getMemoryCount(projectPath: string): number {
-  const slug = projectPath.replace(/\//g, '-')
+  const slug = projectPath.replace(/[^a-zA-Z0-9]/g, '-')
   const memDir = join(HOME, '.claude', 'projects', slug, 'memory')
   if (!existsSync(memDir)) return 0
   try {

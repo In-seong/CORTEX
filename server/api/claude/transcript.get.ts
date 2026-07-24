@@ -1,6 +1,6 @@
 import { readdirSync, statSync, openSync, readSync, fstatSync, closeSync } from 'fs'
 import { join } from 'path'
-import { homedir } from 'os'
+import { claudeProjectDir } from '../../utils/claude-paths'
 
 // orca native-chat 조립기의 축약판:
 // 프로젝트의 최신 transcript(.jsonl) tail을 파싱해 채팅 버블 목록으로 반환.
@@ -42,8 +42,7 @@ export default defineEventHandler((event) => {
     throw createError({ statusCode: 400, message: 'valid cwd required' })
   }
 
-  const slug = cwd.replace(/\//g, '-')
-  const dir = join(homedir(), '.claude', 'projects', slug)
+  const dir = claudeProjectDir(cwd)
 
   // claude -c 는 이어받아도 새 .jsonl을 만들 수 있어, 최신 파일만 읽으면 과거 대화가 사라진다.
   // → 최근 mtime 상위 파일들을 모아 timestamp 순으로 병합하고 uuid로 dedupe.
