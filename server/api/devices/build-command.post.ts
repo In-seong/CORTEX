@@ -37,9 +37,20 @@ export default defineEventHandler(async (event) => {
     } else if (kind === 'React Native') {
       command = `npx react-native run-android --deviceId ${device_id}`
     } else if (target.androidDir) {
-      // 네이티브 Android — gradlew 위치에서 설치 후 실행
+      // 네이티브 Android — gradlew 위치에서 설치 후, APK의 실제 패키지/액티비티로 실행
       const cd = target.androidDir === '.' ? '' : `cd "${target.androidDir}" && `
-      command = `${cd}./gradlew installDebug && echo '✅ 설치 완료 — 폰에서 앱을 실행하세요'${adb ? ` && ${adb} -s ${device_id} shell monkey -p $(${adb} -s ${device_id} shell pm list packages -3 | head -1 | sed 's/package://') 1 2>/dev/null || true` : ''}`
+      const home = process.env.HOME || '/Users/scoop'
+      const sdk = `${home}/Library/Android/sdk/build-tools`
+      let launch = ''
+      if (adb) {
+        // 방금 빌드한 debug APK를 찾아 aapt로 패키지/런처액티비티 추출 → am start (정확한 앱 실행)
+        launch = ` && APK=$(find . -path '*/outputs/apk/debug/*.apk' 2>/dev/null | head -1)` +
+          ` && AAPT=$(ls "${sdk}"/*/aapt2 2>/dev/null | sort -V | tail -1); [ -z "$AAPT" ] && AAPT=$(ls "${sdk}"/*/aapt 2>/dev/null | sort -V | tail -1);` +
+          ` PKG=$("$AAPT" dump badging "$APK" 2>/dev/null | sed -n "s/.*package: name='\\([^']*\\)'.*/\\1/p");` +
+          ` ACT=$("$AAPT" dump badging "$APK" 2>/dev/null | sed -n "s/launchable-activity: name='\\([^']*\\)'.*/\\1/p");` +
+          ` if [ -n "$PKG" ] && [ -n "$ACT" ]; then echo "▶ 실행: $PKG"; ${adb} -s ${device_id} shell am start -n "$PKG/$ACT"; else echo "⚠️ 패키지 자동감지 실패 — 폰에서 직접 실행하세요"; fi`
+      }
+      command = `${cd}./gradlew installDebug && echo '✅ 설치 완료'${launch}`
     }
   } else if (platform === 'ios') {
     if (kind === 'Flutter') {
