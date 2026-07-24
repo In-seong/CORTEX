@@ -1,6 +1,9 @@
 # CORTEX WORKLOG
 
 ## 📌 현재 진행 중 / 다음 할 일
+- ⚠️ **채팅 전송 함정**: bracketed paste(\x1b[200~..)는 최신 Claude Code TUI에서 안 먹힘 → **plain 텍스트 주입 + 450ms 후 \r** 방식만 동작. 개행은 \n 유지, \r만 제출 신호
+- ⚠️ **transcript 함정**: claude -c 는 새 .jsonl을 만들어 최신 1개만 읽으면 과거 대화 사라짐 → 최근 6시간/최대 5개 파일 병합 + uuid dedupe
+- (기존 항목 아래 유지)
 - **Phase 1~6 + 네이티브 채팅/분할/디바이스/그래프 계층까지 완료** (main). 사용자 수동 테스트 대기 — `claudedocs/TEST_SCENARIOS.md` (A~L)
 - 남은 개선 후보: 서버 재시작 시 PTY 소멸(데몬), Web Push, Cmd+K 팔레트, agent-hook 인증, electron/ 잔재 정리, 채팅 뷰 마크다운 렌더링
 - 주의: claude 경로 `/Users/scoop/.local/bin/claude` 고정

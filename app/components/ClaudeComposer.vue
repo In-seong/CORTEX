@@ -54,8 +54,8 @@ async function ensureSession(): Promise<string | null> {
       body: { cwd: props.projectPath, command: props.initialCommand || '/Users/scoop/.local/bin/claude -c' },
     }) as any
     localStorage.setItem(storageKey.value, id)
-    showHint('새 Claude 세션을 시작했습니다 — 잠시 후 전송됩니다')
-    await new Promise(r => setTimeout(r, 3500)) // TUI 부팅 대기
+    showHint('새 Claude 세션 시작 중... (신뢰 확인이 뜨면 "터미널 보기"에서 처리하세요)', 6000)
+    await new Promise(r => setTimeout(r, 5000)) // TUI 부팅 + 신뢰 프롬프트 대기
     return id
   } catch {
     showHint('⚠️ 세션 시작 실패')
@@ -91,10 +91,11 @@ async function send() {
     const id = await ensureSession()
     if (!id) { sending.value = false; return }
 
-    // bracketed paste — 멀티라인도 한 덩어리로 안전하게
-    const paste = `\x1b[200~${prompt}\x1b[201~`
-    await $fetch(`/api/terminal/${id}`, { method: 'POST', body: { type: 'input', data: paste } })
-    await new Promise(r => setTimeout(r, 300))
+    // 개행 정규화 (\r은 제출 신호이므로 본문에서 제거, 줄바꿈은 \n 유지)
+    const body = prompt.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+    // 본문 주입 → 렌더 대기 → 제출(\r). plain 방식이 최신 Claude Code TUI에서 안정적.
+    await $fetch(`/api/terminal/${id}`, { method: 'POST', body: { type: 'input', data: body } })
+    await new Promise(r => setTimeout(r, 450))
     await $fetch(`/api/terminal/${id}`, { method: 'POST', body: { type: 'input', data: '\r' } })
 
     text.value = ''
