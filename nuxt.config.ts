@@ -15,7 +15,7 @@ export default defineNuxtConfig({
       title: 'CORTEX',
       meta: [
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'theme-color', content: '#262624' },
+        { name: 'theme-color', content: '#f5f4ef' },
         { name: 'mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
@@ -35,6 +35,13 @@ export default defineNuxtConfig({
       ],
     },
     pageTransition: { name: 'page', mode: 'out-in' },
+    script: [
+      {
+        // FOUC 방지: 페인트 전에 저장된 테마 적용 (기본 라이트)
+        innerHTML: `(function(){try{var t=localStorage.getItem('cortex-theme');if(t==='dark')document.documentElement.classList.add('dark');}catch(e){}})()`,
+        tagPosition: 'head',
+      },
+    ],
   },
 
   tailwindcss: {
@@ -47,27 +54,27 @@ export default defineNuxtConfig({
             mono: ['JetBrains Mono', 'monospace'],
           },
           colors: {
-            // Claude 앱 다크 톤 — 따뜻한 그레이 캔버스 + 코랄 액센트
+            // Claude 앱 톤 — CSS 변수로 라이트(크림)/다크 전환. 값은 main.css :root/.dark
             brain: {
-              bg: '#262624',
-              surface: '#1e1d1b',
-              card: '#30302e',
-              border: 'rgba(255,255,255,0.10)',
-              'border-light': 'rgba(255,255,255,0.18)',
-              muted: '#8f8d85',
-              text: '#f5f4ee',
-              'text-secondary': '#b7b4aa',
+              bg: 'rgb(var(--c-bg) / <alpha-value>)',
+              surface: 'rgb(var(--c-surface) / <alpha-value>)',
+              card: 'rgb(var(--c-card) / <alpha-value>)',
+              border: 'var(--c-border)',
+              'border-light': 'var(--c-border-light)',
+              muted: 'rgb(var(--c-muted) / <alpha-value>)',
+              text: 'rgb(var(--c-text) / <alpha-value>)',
+              'text-secondary': 'rgb(var(--c-text-secondary) / <alpha-value>)',
             },
             neon: {
-              indigo: '#d97757',       // Claude coral (브랜드 액센트)
-              'indigo-deep': '#c25e3f',
-              cyan: '#4a9d9c',
-              'cyan-deep': '#3d8180',
-              emerald: '#7bb87a',
-              amber: '#d9a441',
-              rose: '#d97066',
-              purple: '#b08cc9',
-              blue: '#6b9bd1',
+              indigo: 'rgb(var(--c-accent) / <alpha-value>)',       // Claude coral
+              'indigo-deep': 'rgb(var(--c-accent-deep) / <alpha-value>)',
+              cyan: 'rgb(var(--c-cyan) / <alpha-value>)',
+              'cyan-deep': 'rgb(var(--c-cyan) / <alpha-value>)',
+              emerald: 'rgb(var(--c-emerald) / <alpha-value>)',
+              amber: 'rgb(var(--c-amber) / <alpha-value>)',
+              rose: 'rgb(var(--c-rose) / <alpha-value>)',
+              purple: 'rgb(var(--c-purple) / <alpha-value>)',
+              blue: 'rgb(var(--c-blue) / <alpha-value>)',
             },
           },
           animation: {

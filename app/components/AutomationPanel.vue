@@ -69,7 +69,7 @@ const statusIcon: Record<string, string> = { done: '✅', failed: '⚠️', runn
       <h3 class="text-[10px] font-semibold text-brain-muted uppercase tracking-[0.08em]">자동화 (예약 프롬프트)</h3>
       <button
         @click="showAdd = !showAdd"
-        class="w-6 h-6 rounded flex items-center justify-center text-sm text-brain-muted hover:text-brain-text hover:bg-white/[0.06] transition-colors"
+        class="w-6 h-6 rounded flex items-center justify-center text-sm text-brain-muted hover:text-brain-text hover:bg-brain-border transition-colors"
       >{{ showAdd ? '✕' : '+' }}</button>
     </div>
 
@@ -114,7 +114,7 @@ const statusIcon: Record<string, string> = { done: '✅', failed: '⚠️', runn
           <button
             @click="toggle(a)"
             class="w-8 h-[18px] rounded-full relative shrink-0 transition-colors"
-            :class="a.enabled ? 'bg-neon-indigo/60' : 'bg-white/10'"
+            :class="a.enabled ? 'bg-neon-indigo/60' : 'bg-brain-border'"
             :title="a.enabled ? '끄기' : '켜기'"
           >
             <span class="absolute top-0.5 w-[14px] h-[14px] rounded-full bg-white transition-all" :class="a.enabled ? 'left-[17px]' : 'left-0.5 opacity-60'" />

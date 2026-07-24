@@ -168,7 +168,7 @@ const statusColor: Record<string, string> = {
       </div>
       <button
         @click="loadStatus"
-        class="w-6 h-6 rounded flex items-center justify-center text-xs text-brain-muted hover:text-brain-text hover:bg-white/[0.06] transition-colors"
+        class="w-6 h-6 rounded flex items-center justify-center text-xs text-brain-muted hover:text-brain-text hover:bg-brain-border transition-colors"
       >⟳</button>
     </div>
 
@@ -182,8 +182,8 @@ const statusColor: Record<string, string> = {
           v-for="f in status.files"
           :key="f.path"
           @click="openDiff(f.path)"
-          class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-white/[0.04] transition-colors"
-          :class="selectedFile === f.path ? 'bg-white/[0.06]' : ''"
+          class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-brain-border transition-colors"
+          :class="selectedFile === f.path ? 'bg-brain-border' : ''"
         >
           <span class="text-[10px] font-mono font-bold w-5 shrink-0" :class="statusColor[f.status[0]] || 'text-brain-muted'">
             {{ f.status }}
@@ -204,7 +204,7 @@ const statusColor: Record<string, string> = {
         <div v-else class="font-mono text-[11px] leading-relaxed py-2">
           <template v-for="(line, idx) in diffLines" :key="idx">
             <div
-              class="group flex hover:bg-white/[0.04] cursor-pointer"
+              class="group flex hover:bg-brain-border cursor-pointer"
               :class="commentingLine === idx ? 'bg-neon-indigo/[0.08]' : ''"
               @click="startComment(idx)"
             >

@@ -54,7 +54,7 @@ async function buildTo(device: any) {
       <h3 class="text-[10px] font-semibold text-brain-muted uppercase tracking-[0.08em]">연결된 디바이스</h3>
       <button
         @click="refresh()"
-        class="w-6 h-6 rounded flex items-center justify-center text-xs text-brain-muted hover:text-brain-text hover:bg-white/[0.06] transition-colors"
+        class="w-6 h-6 rounded flex items-center justify-center text-xs text-brain-muted hover:text-brain-text hover:bg-brain-border transition-colors"
         title="새로고침"
       >⟳</button>
     </div>

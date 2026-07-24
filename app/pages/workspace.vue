@@ -53,13 +53,13 @@ function toggleSplit() {
         class="flex items-center gap-2 px-4 py-2 text-[13px] border-r border-brain-border whitespace-nowrap transition-colors shrink-0"
         :class="activeTabId === tab.id
           ? 'bg-brain-bg text-brain-text border-b-2 border-b-neon-indigo'
-          : 'text-brain-muted hover:text-brain-text hover:bg-white/[0.03]'"
+          : 'text-brain-muted hover:text-brain-text hover:bg-brain-border'"
       >
         <span v-if="tab.has_claude_md" class="text-xs">🤖</span>
         <span>{{ tab.name }}</span>
         <span
           @click.stop="closeTab(tab.id)"
-          class="ml-1 w-4 h-4 rounded flex items-center justify-center text-xs hover:bg-white/10 transition-colors cursor-pointer"
+          class="ml-1 w-4 h-4 rounded flex items-center justify-center text-xs hover:bg-brain-border transition-colors cursor-pointer"
         >✕</span>
       </button>
 
@@ -223,7 +223,7 @@ function toggleSplit() {
               v-for="project in filteredProjects"
               :key="project.id"
               @click="pickProject(project)"
-              class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/[0.04] transition-colors border-b border-brain-border/50"
+              class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-brain-border transition-colors border-b border-brain-border/50"
               :class="openTabs.some(t => t.id === project.id) ? 'opacity-50' : ''"
             >
               <span class="text-base shrink-0">{{ project.icon || '📁' }}</span>

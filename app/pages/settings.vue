@@ -133,7 +133,7 @@ async function bulkHide(hidden: boolean) {
             <button
               @click="filterCategory = null"
               class="px-2.5 py-1.5 rounded-md text-xs transition-colors"
-              :class="filterCategory === null ? 'bg-neon-indigo/15 text-neon-indigo border border-neon-indigo/30' : 'text-brain-muted hover:text-brain-text hover:bg-white/[0.04] border border-transparent'"
+              :class="filterCategory === null ? 'bg-neon-indigo/15 text-neon-indigo border border-neon-indigo/30' : 'text-brain-muted hover:text-brain-text hover:bg-brain-border border border-transparent'"
             >
               전체
             </button>
@@ -141,7 +141,7 @@ async function bulkHide(hidden: boolean) {
               v-for="cat in allCategories" :key="cat"
               @click="filterCategory = filterCategory === cat ? null : cat"
               class="px-2.5 py-1.5 rounded-md text-xs transition-colors"
-              :class="filterCategory === cat ? 'bg-neon-indigo/15 text-neon-indigo border border-neon-indigo/30' : 'text-brain-muted hover:text-brain-text hover:bg-white/[0.04] border border-transparent'"
+              :class="filterCategory === cat ? 'bg-neon-indigo/15 text-neon-indigo border border-neon-indigo/30' : 'text-brain-muted hover:text-brain-text hover:bg-brain-border border border-transparent'"
             >
               {{ categoryIcons[cat] || '📁' }} {{ cat }}
             </button>
@@ -182,7 +182,7 @@ async function bulkHide(hidden: boolean) {
             <tbody>
               <tr
                 v-for="project in filteredProjects" :key="project.id"
-                class="border-b border-brain-border/50 transition-colors hover:bg-white/[0.02]"
+                class="border-b border-brain-border/50 transition-colors hover:bg-brain-border"
                 :class="{ 'opacity-40': project.is_hidden }"
               >
                 <!-- Status Dot -->
@@ -230,7 +230,7 @@ async function bulkHide(hidden: boolean) {
                   <button
                     v-else
                     @click="startEditCategory(project)"
-                    class="flex items-center gap-1 px-2 py-1 rounded text-xs text-brain-text-secondary hover:text-brain-text hover:bg-white/[0.04] transition-colors group"
+                    class="flex items-center gap-1 px-2 py-1 rounded text-xs text-brain-text-secondary hover:text-brain-text hover:bg-brain-border transition-colors group"
                   >
                     <span>{{ categoryIcons[project.category] || '📁' }}</span>
                     <span>{{ project.category }}</span>
@@ -266,7 +266,7 @@ async function bulkHide(hidden: boolean) {
                       @click="toggleHidden(project)"
                       :disabled="saving === project.id"
                       class="relative w-10 h-[22px] rounded-full transition-colors duration-200 focus:outline-none"
-                      :class="project.is_hidden ? 'bg-white/10' : 'bg-neon-indigo/60'"
+                      :class="project.is_hidden ? 'bg-brain-border' : 'bg-neon-indigo/60'"
                     >
                       <div
                         class="absolute top-0.5 w-[18px] h-[18px] rounded-full bg-white transition-all duration-200"

@@ -288,13 +288,13 @@ async function deleteWorktree(wt: any, force = false) {
                 v-if="relatedProjects.length"
                 @click="syncRelations"
                 :disabled="syncing"
-                class="w-6 h-6 rounded flex items-center justify-center text-sm text-brain-muted hover:text-brain-text hover:bg-white/[0.06] transition-colors"
+                class="w-6 h-6 rounded flex items-center justify-center text-sm text-brain-muted hover:text-brain-text hover:bg-brain-border transition-colors"
                 :class="syncing ? 'animate-spin' : ''"
                 title="CLAUDE.md 동기화"
               >⟳</button>
               <button
                 @click="showRelationPicker = true"
-                class="w-6 h-6 rounded flex items-center justify-center text-sm text-brain-muted hover:text-brain-text hover:bg-white/[0.06] transition-colors"
+                class="w-6 h-6 rounded flex items-center justify-center text-sm text-brain-muted hover:text-brain-text hover:bg-brain-border transition-colors"
                 title="추가"
               >+</button>
             </div>
@@ -303,7 +303,7 @@ async function deleteWorktree(wt: any, force = false) {
             <div
               v-for="rel in relatedProjects"
               :key="rel.id"
-              class="group flex flex-col px-2 py-1.5 rounded-md text-sm text-brain-text-secondary hover:bg-white/[0.04] transition-colors"
+              class="group flex flex-col px-2 py-1.5 rounded-md text-sm text-brain-text-secondary hover:bg-brain-border transition-colors"
             >
               <div class="flex items-center gap-2">
                 <NuxtLink
@@ -520,7 +520,7 @@ async function deleteWorktree(wt: any, force = false) {
               v-for="p in availableProjects"
               :key="p.id"
               @click="addRelation(p.id)"
-              class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/[0.04] transition-colors border-b border-brain-border/50 text-left"
+              class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-brain-border transition-colors border-b border-brain-border/50 text-left"
             >
               <span class="text-base shrink-0">{{ p.icon || '📁' }}</span>
               <div class="flex-1 min-w-0">

@@ -2,12 +2,51 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===== 테마 색 토큰 (라이트=크림 기본 / .dark=따뜻한 다크) ===== */
+:root {
+  --c-bg: 245 244 239;          /* #f5f4ef 크림 캔버스 */
+  --c-surface: 238 236 229;     /* 사이드바 */
+  --c-card: 253 252 249;        /* 카드 (거의 흰) */
+  --c-border: rgba(0, 0, 0, 0.10);
+  --c-border-light: rgba(0, 0, 0, 0.16);
+  --c-muted: 120 118 110;
+  --c-text: 61 61 58;           /* #3d3d3a */
+  --c-text-secondary: 107 105 98;
+  --c-accent: 191 87 48;        /* 코랄 (라이트에선 진하게 대비) */
+  --c-accent-deep: 166 71 37;
+  --c-cyan: 45 128 127;
+  --c-emerald: 74 142 73;
+  --c-amber: 176 122 40;
+  --c-rose: 194 83 73;
+  --c-purple: 138 100 168;
+  --c-blue: 74 122 176;
+}
+
+.dark {
+  --c-bg: 38 38 36;             /* #262624 */
+  --c-surface: 30 29 27;        /* #1e1d1b */
+  --c-card: 48 48 46;           /* #30302e */
+  --c-border: rgba(255, 255, 255, 0.10);
+  --c-border-light: rgba(255, 255, 255, 0.18);
+  --c-muted: 143 141 133;
+  --c-text: 245 244 238;
+  --c-text-secondary: 183 180 170;
+  --c-accent: 217 119 87;       /* #d97757 */
+  --c-accent-deep: 194 94 63;
+  --c-cyan: 74 157 156;
+  --c-emerald: 123 184 122;
+  --c-amber: 217 164 65;
+  --c-rose: 217 112 102;
+  --c-purple: 176 140 201;
+  --c-blue: 107 155 209;
+}
+
 @layer base {
   * {
     @apply border-brain-border;
   }
   body {
-    background: #262624;
+    background: rgb(var(--c-bg));
   }
 }
 
@@ -20,18 +59,18 @@
 /* === Panels / Cards === */
 /* .glass = 반투명 패널(헤더·모달), .glass-card = 기본 카드. 이름은 기존 호환 유지 */
 .glass {
-  background: rgba(30, 29, 27, 0.92);
+  background: rgb(var(--c-surface) / 0.92);
   @apply backdrop-blur-md;
 }
 
 .glass-card {
-  background: #30302e;
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgb(var(--c-card));
+  border: 1px solid var(--c-border);
   border-radius: 0.75rem;
 }
 
 .glass-card:hover {
-  border-color: rgba(255, 255, 255, 0.18);
+  border-color: var(--c-border-light);
 }
 
 /* === Monospace metadata text === */
@@ -45,11 +84,11 @@
   width: 4px;
 }
 .scrollbar-sleek::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--c-border-light);
   border-radius: 2px;
 }
 .scrollbar-sleek::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgb(var(--c-muted) / 0.6);
 }
 
 .scrollbar-hide::-webkit-scrollbar {
@@ -69,8 +108,8 @@
 }
 
 .vue-flow__edge-path {
-  stroke: #d97757;
-  stroke-opacity: 0.35;
+  stroke: rgb(var(--c-accent));
+  stroke-opacity: 0.4;
   stroke-width: 2;
 }
 
@@ -84,8 +123,8 @@
 }
 
 .vue-flow__minimap {
-  background: #30302e !important;
-  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  background: rgb(var(--c-card)) !important;
+  border: 1px solid var(--c-border) !important;
   border-radius: 12px !important;
 }
 
