@@ -107,6 +107,17 @@ CREATE TABLE IF NOT EXISTS agent_status (
   FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL
 );
 
+CREATE TABLE IF NOT EXISTS notifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  type TEXT NOT NULL,
+  title TEXT NOT NULL,
+  body TEXT DEFAULT '',
+  project_id INTEGER,
+  session_id TEXT,
+  read INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS usage_turns (
   dedupe_key TEXT PRIMARY KEY,
   session_id TEXT,

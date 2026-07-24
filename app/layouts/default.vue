@@ -27,11 +27,72 @@ async function fetchAgents() {
 
 onMounted(() => {
   fetchAgents()
-  agentTimer = setInterval(fetchAgents, 5000)
+  fetchNotifications()
+  if (typeof Notification !== 'undefined') notifPermission.value = Notification.permission
+  agentTimer = setInterval(() => {
+    fetchAgents()
+    fetchNotifications()
+  }, 5000)
 })
 onBeforeUnmount(() => {
   if (agentTimer) clearInterval(agentTimer)
 })
+
+// ===== 알림 (seq 기반 catch-up + 브라우저 Notification) =====
+const notifications = ref<any[]>([])
+const unreadNotifs = ref(0)
+let lastNotifSeq = 0
+let notifsInitialized = false
+const showNotifPanel = ref(false)
+const notifPermission = ref<string>('default')
+
+async function fetchNotifications() {
+  try {
+    const res = await $fetch('/api/notifications', {
+      query: lastNotifSeq > 0 ? { since: lastNotifSeq } : {},
+    }) as any
+
+    if (!notifsInitialized) {
+      notifications.value = res.items
+      notifsInitialized = true
+    } else if (res.items.length) {
+      notifications.value = [...res.items, ...notifications.value].slice(0, 50)
+      // 새 알림 → 브라우저 알림 (권한 있을 때)
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        for (const n of res.items.slice(0, 3)) {
+          try {
+            new Notification(n.title, { body: n.body || '', tag: `cortex-${n.id}`, icon: '/icon-192.png' })
+          } catch {}
+        }
+      }
+    }
+    lastNotifSeq = Math.max(lastNotifSeq, res.maxSeq)
+    unreadNotifs.value = res.unread
+  } catch {}
+}
+
+async function requestNotifPermission() {
+  if (typeof Notification === 'undefined') return
+  const p = await Notification.requestPermission()
+  notifPermission.value = p
+}
+
+async function markAllNotifsRead() {
+  await $fetch('/api/notifications/read', { method: 'POST', body: { all: true } }).catch(() => {})
+  unreadNotifs.value = 0
+  notifications.value = notifications.value.map(n => ({ ...n, read: 1 }))
+}
+
+function openNotifPanel() {
+  showNotifPanel.value = !showNotifPanel.value
+  if (showNotifPanel.value && unreadNotifs.value > 0) markAllNotifsRead()
+}
+
+function clickNotification(n: any) {
+  showNotifPanel.value = false
+  const p = ((projects.value as any[]) || []).find(pr => pr.id === n.project_id)
+  if (p) openInWorkspace(p)
+}
 
 const STATE_RANK: Record<string, number> = { permission: 5, waiting: 4, working: 3, done: 2, idle: 1 }
 const STATE_LABEL: Record<string, string> = {
@@ -121,8 +182,22 @@ watch(() => route.path, () => { showMobileNav.value = false })
           <h1 class="text-sm font-semibold leading-none">CORTEX</h1>
           <p class="text-[10px] text-brain-muted font-mono mt-0.5">dev nerve center</p>
         </div>
-        <div class="ml-auto w-1.5 h-1.5 rounded-full bg-neon-emerald" title="ONLINE" />
+        <div class="ml-auto flex items-center gap-2">
+          <button
+            @click="openNotifPanel"
+            class="relative w-7 h-7 rounded-md flex items-center justify-center text-brain-muted hover:text-brain-text hover:bg-white/[0.06] transition-colors"
+            title="알림"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+            <span
+              v-if="unreadNotifs > 0"
+              class="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-0.5 rounded-full bg-neon-rose text-white text-[9px] font-semibold flex items-center justify-center"
+            >{{ unreadNotifs > 9 ? '9+' : unreadNotifs }}</span>
+          </button>
+          <div class="w-1.5 h-1.5 rounded-full bg-neon-emerald" title="ONLINE" />
+        </div>
       </div>
+
 
       <!-- Nav -->
       <nav class="px-2 py-2 space-y-0.5 shrink-0">
@@ -229,8 +304,52 @@ watch(() => route.path, () => { showMobileNav.value = false })
         <span class="text-sm">🧠</span>
         <span class="text-sm font-semibold">CORTEX</span>
       </div>
-      <div class="ml-auto w-1.5 h-1.5 rounded-full bg-neon-emerald" />
+      <div class="ml-auto flex items-center gap-2">
+        <button
+          @click="openNotifPanel"
+          class="relative w-8 h-8 rounded-md flex items-center justify-center text-brain-text-secondary hover:text-brain-text"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+          <span
+            v-if="unreadNotifs > 0"
+            class="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-0.5 rounded-full bg-neon-rose text-white text-[9px] font-semibold flex items-center justify-center"
+          >{{ unreadNotifs > 9 ? '9+' : unreadNotifs }}</span>
+        </button>
+        <div class="w-1.5 h-1.5 rounded-full bg-neon-emerald" />
+      </div>
     </div>
+
+    <!-- Notification Panel (공용) -->
+    <Teleport to="body">
+      <div v-if="showNotifPanel" class="fixed inset-0 z-[60]" @click.self="showNotifPanel = false">
+        <div class="fixed left-2 right-2 top-14 md:left-3 md:right-auto md:top-16 md:w-80 bg-brain-card border border-brain-border-light rounded-lg shadow-floating overflow-hidden animate-fade-in">
+          <div class="flex items-center justify-between px-3 py-2 border-b border-brain-border">
+            <span class="text-xs font-semibold">알림</span>
+            <div class="flex items-center gap-2">
+              <button
+                v-if="notifPermission !== 'granted'"
+                @click="requestNotifPermission"
+                class="text-[10px] text-neon-indigo hover:underline"
+              >브라우저 알림 켜기</button>
+              <button @click="showNotifPanel = false" class="text-xs text-brain-muted hover:text-brain-text">✕</button>
+            </div>
+          </div>
+          <div class="max-h-72 overflow-y-auto scrollbar-sleek">
+            <button
+              v-for="n in notifications"
+              :key="n.id"
+              @click="clickNotification(n)"
+              class="w-full text-left px-3 py-2 border-b border-brain-border/50 hover:bg-white/[0.04] transition-colors"
+            >
+              <p class="text-xs" :class="n.read ? 'text-brain-text-secondary' : 'text-brain-text font-medium'">{{ n.title }}</p>
+              <p v-if="n.body" class="text-[11px] text-brain-muted truncate mt-0.5">{{ n.body }}</p>
+              <p class="text-[10px] text-brain-muted/60 font-mono mt-0.5">{{ n.created_at }}</p>
+            </button>
+            <p v-if="!notifications.length" class="px-3 py-6 text-center text-xs text-brain-muted">알림이 없습니다</p>
+          </div>
+        </div>
+      </div>
+    </Teleport>
 
     <!-- Mobile Drawer -->
     <Teleport to="body">

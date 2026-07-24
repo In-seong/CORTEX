@@ -115,6 +115,28 @@ export default defineEventHandler(async (event) => {
       break
   }
 
+  // 알림 생성 (orca: WS 대신 seq 로그 + 폴링 catch-up. id가 단조증가 seq 역할)
+  if (fields.state === 'done' || fields.state === 'permission' || fields.state === 'waiting') {
+    const projName = projectId
+      ? (db.prepare('SELECT name FROM projects WHERE id = ?').get(projectId) as any)?.name
+      : cwd.split('/').pop()
+    // 같은 세션·같은 타입 알림이 90초 내 반복되면 스킵 (Notification 이벤트 스팸 방지)
+    const recent = db.prepare(`
+      SELECT id FROM notifications
+      WHERE session_id = ? AND type = ? AND (julianday('now') - julianday(created_at)) * 86400 < 90
+    `).get(sessionId, fields.state)
+    if (!recent) {
+      const title = fields.state === 'done'
+        ? `✅ ${projName || '에이전트'} 작업 완료`
+        : fields.state === 'permission'
+          ? `🔐 ${projName || '에이전트'} 권한 대기 중`
+          : `💬 ${projName || '에이전트'} 응답 대기 중`
+      db.prepare(
+        'INSERT INTO notifications (type, title, body, project_id, session_id) VALUES (?, ?, ?, ?, ?)'
+      ).run(fields.state, title, (fields.last_message || '').slice(0, 200), projectId, sessionId)
+    }
+  }
+
   const existing = db.prepare('SELECT id FROM agent_status WHERE session_id = ?').get(sessionId)
 
   if (!existing) {
