@@ -107,6 +107,35 @@ CREATE TABLE IF NOT EXISTS agent_status (
   FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL
 );
 
+CREATE TABLE IF NOT EXISTS usage_turns (
+  dedupe_key TEXT PRIMARY KEY,
+  session_id TEXT,
+  day TEXT,
+  ts TEXT,
+  model TEXT,
+  project_id INTEGER,
+  cwd TEXT,
+  input_tokens INTEGER DEFAULT 0,
+  output_tokens INTEGER DEFAULT 0,
+  cache_read_tokens INTEGER DEFAULT 0,
+  cache_write_tokens INTEGER DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_usage_turns_day ON usage_turns(day);
+CREATE INDEX IF NOT EXISTS idx_usage_turns_project ON usage_turns(project_id);
+
+CREATE TABLE IF NOT EXISTS scanned_files (
+  path TEXT PRIMARY KEY,
+  mtime_ms INTEGER,
+  size INTEGER,
+  scanned_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS meta_kv (
+  key TEXT PRIMARY KEY,
+  value TEXT
+);
+
 CREATE TABLE IF NOT EXISTS quick_actions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   project_id INTEGER NOT NULL,
