@@ -7,7 +7,7 @@
     @apply border-brain-border;
   }
   body {
-    background: #0a0a0a;
+    background: #262624;
   }
 }
 
@@ -20,18 +20,18 @@
 /* === Panels / Cards === */
 /* .glass = 반투명 패널(헤더·모달), .glass-card = 기본 카드. 이름은 기존 호환 유지 */
 .glass {
-  background: rgba(17, 17, 19, 0.92);
+  background: rgba(30, 29, 27, 0.92);
   @apply backdrop-blur-md;
 }
 
 .glass-card {
-  background: #171717;
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: #30302e;
+  border: 1px solid rgba(255, 255, 255, 0.10);
   border-radius: 0.75rem;
 }
 
 .glass-card:hover {
-  border-color: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 /* === Monospace metadata text === */
@@ -69,8 +69,8 @@
 }
 
 .vue-flow__edge-path {
-  stroke: #818cf8;
-  stroke-opacity: 0.3;
+  stroke: #d97757;
+  stroke-opacity: 0.35;
   stroke-width: 2;
 }
 
@@ -84,8 +84,8 @@
 }
 
 .vue-flow__minimap {
-  background: #171717 !important;
-  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  background: #30302e !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
   border-radius: 12px !important;
 }
 

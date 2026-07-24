@@ -8,13 +8,13 @@
 
 <style>
 html {
-  background-color: #0a0a0a;
+  background-color: #262624;
   color-scheme: dark;
 }
 
 body {
   overflow-x: hidden;
-  background: #0a0a0a;
+  background: #262624;
   letter-spacing: 0.01em;
 }
 
