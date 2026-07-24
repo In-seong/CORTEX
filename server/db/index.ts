@@ -16,6 +16,10 @@ export function getDb(): Database.Database {
     if (!cols.some((c: any) => c.name === 'is_hidden')) {
       db.exec("ALTER TABLE projects ADD COLUMN is_hidden INTEGER DEFAULT 0")
     }
+    const relCols = db.prepare("PRAGMA table_info(project_relations)").all() as any[]
+    if (relCols.length && !relCols.some((c: any) => c.name === 'note')) {
+      db.exec("ALTER TABLE project_relations ADD COLUMN note TEXT DEFAULT ''")
+    }
     if (!cols.some((c: any) => c.name === 'is_active')) {
       db.exec("ALTER TABLE projects ADD COLUMN is_active INTEGER DEFAULT 0")
       // 기존 사용자: 관계를 설정한(=의도적으로 연결한 작업 관계망) 프로젝트만 자동 등록,
