@@ -70,11 +70,17 @@ scoop-brain/
 │   ├── api/
 │   │   ├── agent-hook.post.ts           # Claude Code hook 수신 (에이전트 상태)
 │   │   ├── agents/                      # 상태 목록 + unread ack
+│   │   ├── notifications/               # 알림 (id=단조 seq, ?since= catch-up)
+│   │   ├── usage/                       # Claude 사용량 (transcript 스캔+비용 추정)
+│   │   ├── worktrees/                   # 병렬 worktree CRUD (fan-out)
+│   │   ├── git/                         # status/diff/commit/AI커밋메시지
+│   │   ├── automations/                 # 예약 프롬프트 (60초 tick 러너)
 │   │   ├── projects/                    # 프로젝트 CRUD + 스캔 + 관계
-│   │   ├── terminal/                    # PTY spawn/input/output + 이미지 업로드
+│   │   ├── terminal/                    # PTY spawn + SSE(?since=seq replay) + kill-by-cwd
 │   │   ├── claude/                      # Claude 세션/프롬프트
 │   │   ├── todos/                       # TODO CRUD
 │   │   └── system/                      # 시스템 통계, 앱 실행
+│   ├── plugins/automation-runner.ts     # 자동화 60초 tick
 │   └── utils/
 │       └── scanner.ts                   # 프로젝트 디렉토리 스캐너
 ├── electron/                            # Electron 메인 프로세스
@@ -106,6 +112,13 @@ curl -s -o /dev/null -w "%{http_code}" http://localhost:7777/
 - 액센트: `neon-indigo` (#818cf8), `neon-cyan` (#22d3ee), `neon-emerald` (#34d399)
 - 폰트: Pretendard (본문) + JetBrains Mono (코드/터미널)
 - 네온 글로우 효과: `shadow-neon`, `shadow-neon-lg`
+
+## 핵심 메커니즘 (orca 이식)
+- **터미널 생존성**: 서버가 PTY+2MB 링버퍼+단조 seq 소유. 클라이언트는 localStorage의 세션 id로 재부착, `GET /api/terminal/:id?since=seq`로 replay. 페이지 이탈≠종료, 탭 닫기/종료 버튼=kill. 서버 재시작 시엔 소멸(새 세션 자동 시작)
+- **사용량**: `~/.claude/projects/**/*.jsonl` 증분 스캔(mtime+size), dedupe `messageId:requestId`, fable/opus 단가는 추정치
+- **알림**: notifications.id가 seq. 클라이언트는 `?since=`로 catch-up, 브라우저 Notification은 권한 허용 시
+- **worktree**: `~/.cortex-worktrees/<repo>/<branch>`에 격리. 삭제 시 미머지 브랜치는 -d로만(보존). count 2-4 = fan-out
+- **자동화**: `claude -p`를 프로젝트 cwd에서 실행(20분 상한, 동시 1개). 완료/실패 시 알림 생성
 
 ## 주의사항
 - `NITRO_HOST`는 반드시 `127.0.0.1` (localhost 쓰면 IPv6 충돌로 EADDRINUSE)

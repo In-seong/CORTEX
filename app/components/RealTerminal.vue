@@ -7,6 +7,7 @@ const props = defineProps<{
   projectPath: string
   projectName: string
   startClaude?: boolean
+  initialCommand?: string // fan-out 등 커스텀 시작 명령 (startClaude 기본 명령보다 우선)
 }>()
 
 const terminalRef = ref<HTMLElement>()
@@ -96,6 +97,11 @@ function onTouchResizeEnd() {
 let term: Terminal | null = null
 let fitAddon: FitAddon | null = null
 let reader: ReadableStreamDefaultReader | null = null
+
+// 세션 생존성: 터미널 id를 localStorage에 저장해 페이지 이탈/새로고침 후 재부착
+const storageKey = computed(() => `cortex-term:${props.projectPath}:${props.startClaude ? 'claude' : 'shell'}`)
+let lastSeq = 0
+let intentionalClose = false
 
 async function uploadImage(base64: string, mimeType: string): Promise<string | null> {
   try {
@@ -222,32 +228,77 @@ async function initTerminal() {
   term.open(terminalRef.value)
   fitAddon.fit()
 
-  const command = props.startClaude ? '/Users/scoop/.local/bin/claude -c' : undefined
+  term.onData((data: string) => {
+    if (terminalId.value) {
+      $fetch(`/api/terminal/${terminalId.value}`, {
+        method: 'POST',
+        body: { type: 'input', data },
+      })
+    }
+  })
 
+  // 1) 저장된 세션에 재부착 시도 → 실패 시 새로 스폰
+  const savedId = localStorage.getItem(storageKey.value)
+  if (savedId) {
+    try {
+      const ping = await $fetch(`/api/terminal/${savedId}`, {
+        method: 'POST',
+        body: { type: 'ping' },
+      }) as { alive: boolean }
+      if (ping.alive) {
+        terminalId.value = savedId
+        lastSeq = 0 // 전체 버퍼 replay로 스크롤백 복원
+        isLoading.value = false
+        streamLoop()
+        return
+      }
+    } catch {}
+    localStorage.removeItem(storageKey.value)
+  }
+
+  await spawnNew()
+}
+
+async function spawnNew() {
+  const command = props.initialCommand || (props.startClaude ? '/Users/scoop/.local/bin/claude -c' : undefined)
   try {
-    const { id, pid } = await $fetch('/api/terminal/spawn', {
+    const { id } = await $fetch('/api/terminal/spawn', {
       method: 'POST',
       body: { cwd: props.projectPath, command },
     }) as { id: string; pid: number }
 
     terminalId.value = id
-    isConnected.value = true
+    lastSeq = 0
+    localStorage.setItem(storageKey.value, id)
     isLoading.value = false
+    streamLoop()
+  } catch (err: any) {
+    isLoading.value = false
+    term?.write(`\r\n\x1b[31mError: ${err.message}\x1b[0m\r\n`)
+  }
+}
 
-    term.onData((data: string) => {
-      if (terminalId.value) {
-        $fetch(`/api/terminal/${terminalId.value}`, {
-          method: 'POST',
-          body: { type: 'input', data },
-        })
+// SSE 수신 루프 — 끊기면 lastSeq부터 자동 재접속
+async function streamLoop() {
+  while (!intentionalClose && terminalId.value) {
+    const id = terminalId.value
+    try {
+      const response = await fetch(`/api/terminal/${id}?since=${lastSeq}`)
+      if (response.status === 404) {
+        // 서버 재시작 등으로 세션 소멸 → 새 세션
+        localStorage.removeItem(storageKey.value)
+        if (!intentionalClose) {
+          term?.write('\r\n\x1b[33m[세션이 종료되어 새로 시작합니다]\x1b[0m\r\n')
+          await spawnNew()
+        }
+        return
       }
-    })
 
-    const response = await fetch(`/api/terminal/${id}`)
-    reader = response.body?.getReader() || null
-    const decoder = new TextDecoder()
+      reader = response.body?.getReader() || null
+      const decoder = new TextDecoder()
+      if (!reader) throw new Error('no stream')
 
-    if (reader) {
+      isConnected.value = true
       let buffer = ''
       while (true) {
         const { done, value } = await reader.read()
@@ -261,18 +312,26 @@ async function initTerminal() {
           if (!line.startsWith('data: ')) continue
           try {
             const msg = JSON.parse(line.slice(6))
-            if (msg.type === 'output' && term) {
+            if ((msg.type === 'output' || msg.type === 'replay') && term) {
+              if (msg.type === 'replay') term.clear()
               term.write(msg.data)
+              lastSeq = msg.seq
+            } else if (msg.type === 'hello') {
+              lastSeq = msg.seq
             } else if (msg.type === 'exit') {
               isConnected.value = false
+              localStorage.removeItem(storageKey.value)
+              return
             }
           } catch {}
         }
       }
-    }
-  } catch (err: any) {
-    isLoading.value = false
-    term.write(`\r\n\x1b[31mError: ${err.message}\x1b[0m\r\n`)
+    } catch {}
+
+    isConnected.value = false
+    if (intentionalClose) return
+    // 네트워크 단절 등 — 1.5초 후 재접속
+    await new Promise(r => setTimeout(r, 1500))
   }
 }
 
@@ -289,20 +348,26 @@ function handleResize() {
 }
 
 async function killTerminal() {
+  intentionalClose = true
+  localStorage.removeItem(storageKey.value)
   if (terminalId.value) {
     await $fetch(`/api/terminal/${terminalId.value}`, {
       method: 'POST',
       body: { type: 'kill' },
-    })
+    }).catch(() => {})
   }
+  isConnected.value = false
 }
 
 async function restartClaude() {
   await killTerminal()
+  reader?.cancel().catch(() => {})
   term?.dispose()
   isLoading.value = true
   isConnected.value = false
   terminalId.value = null
+  intentionalClose = false
+  lastSeq = 0
   await nextTick()
   initTerminal()
 }
@@ -320,9 +385,10 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  // 세션은 죽이지 않는다 — 페이지 이탈/모드 전환 후 재부착 가능 (명시적 종료·탭 닫기에서만 kill)
+  intentionalClose = true
   resizeObserver?.disconnect()
-  reader?.cancel()
-  killTerminal()
+  reader?.cancel().catch(() => {})
   term?.dispose()
 })
 </script>

@@ -97,6 +97,9 @@ onMounted(() => {
       <!-- Todo Panel -->
       <TodoPanel />
 
+      <!-- Claude Usage -->
+      <UsagePanel />
+
       <!-- Projects -->
       <div>
         <div class="flex items-center justify-between gap-3 mb-3 flex-wrap">

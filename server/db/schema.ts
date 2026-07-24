@@ -107,6 +107,68 @@ CREATE TABLE IF NOT EXISTS agent_status (
   FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL
 );
 
+CREATE TABLE IF NOT EXISTS automations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id INTEGER NOT NULL,
+  prompt TEXT NOT NULL,
+  schedule TEXT NOT NULL DEFAULT 'daily',
+  run_time TEXT DEFAULT '09:00',
+  enabled INTEGER DEFAULT 1,
+  last_run_at TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS automation_runs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  automation_id INTEGER NOT NULL,
+  status TEXT DEFAULT 'running',
+  output TEXT DEFAULT '',
+  started_at TEXT DEFAULT (datetime('now')),
+  finished_at TEXT,
+  FOREIGN KEY (automation_id) REFERENCES automations(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  type TEXT NOT NULL,
+  title TEXT NOT NULL,
+  body TEXT DEFAULT '',
+  project_id INTEGER,
+  session_id TEXT,
+  read INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS usage_turns (
+  dedupe_key TEXT PRIMARY KEY,
+  session_id TEXT,
+  day TEXT,
+  ts TEXT,
+  model TEXT,
+  project_id INTEGER,
+  cwd TEXT,
+  input_tokens INTEGER DEFAULT 0,
+  output_tokens INTEGER DEFAULT 0,
+  cache_read_tokens INTEGER DEFAULT 0,
+  cache_write_tokens INTEGER DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_usage_turns_day ON usage_turns(day);
+CREATE INDEX IF NOT EXISTS idx_usage_turns_project ON usage_turns(project_id);
+
+CREATE TABLE IF NOT EXISTS scanned_files (
+  path TEXT PRIMARY KEY,
+  mtime_ms INTEGER,
+  size INTEGER,
+  scanned_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS meta_kv (
+  key TEXT PRIMARY KEY,
+  value TEXT
+);
+
 CREATE TABLE IF NOT EXISTS quick_actions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   project_id INTEGER NOT NULL,
