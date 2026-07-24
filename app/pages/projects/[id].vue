@@ -104,6 +104,92 @@ async function removeRelation(relationId: number) {
   await refresh()
   await syncRelations()
 }
+
+// ===== 병렬 워크트리 =====
+const router = useRouter()
+const { openProject } = useWorkspace()
+const { data: worktreeData, refresh: refreshWorktrees } = await useFetch(`/api/worktrees`, {
+  query: { project_id: route.params.id },
+})
+const worktrees = computed(() => (worktreeData.value as any)?.worktrees || [])
+
+const wtName = ref('')
+const wtCount = ref(1)
+const wtPrompt = ref('')
+const wtCreating = ref(false)
+const wtError = ref('')
+
+function claudeCommandFor(prompt: string): string | undefined {
+  const p = prompt.trim()
+  if (!p) return undefined
+  return `/Users/scoop/.local/bin/claude "${p.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+}
+
+function openWorktreeTab(wt: { path: string; branch: string }, command?: string) {
+  openProject({
+    id: `wt:${wt.path}`,
+    name: `${project.value.name} · ${wt.branch}`,
+    path: wt.path,
+    category: 'worktree',
+    has_claude_md: project.value.has_claude_md,
+    command,
+  }, 'claude')
+}
+
+async function createWorktrees() {
+  if (!wtName.value.trim() || wtCreating.value) return
+  wtCreating.value = true
+  wtError.value = ''
+  try {
+    const res = await $fetch('/api/worktrees', {
+      method: 'POST',
+      body: {
+        project_id: project.value.id,
+        name: wtName.value.trim(),
+        count: wtCount.value,
+      },
+    }) as any
+
+    const command = claudeCommandFor(wtPrompt.value)
+    for (const wt of res.created) {
+      openWorktreeTab(wt, command)
+    }
+    if (res.errors?.length) wtError.value = res.errors.join(' / ')
+
+    wtName.value = ''
+    wtPrompt.value = ''
+    wtCount.value = 1
+    await refreshWorktrees()
+    if (res.created.length) router.push('/workspace')
+  } catch (e: any) {
+    wtError.value = e.data?.message || e.message || '생성 실패'
+  } finally {
+    wtCreating.value = false
+  }
+}
+
+async function deleteWorktree(wt: any, force = false) {
+  wtError.value = ''
+  try {
+    const res = await $fetch('/api/worktrees', {
+      method: 'DELETE',
+      body: { project_id: project.value.id, path: wt.path, force },
+    }) as any
+    if (res.preservedBranch) {
+      wtError.value = `worktree 삭제됨 — 미머지 커밋이 있어 브랜치 '${res.preservedBranch}'는 보존됨`
+    }
+    await refreshWorktrees()
+  } catch (e: any) {
+    const msg = e.data?.message || e.message || '삭제 실패'
+    if (!force && msg.includes('미커밋')) {
+      if (confirm(`${msg}\n\n변경사항을 버리고 강제 삭제할까요?`)) {
+        await deleteWorktree(wt, true)
+        return
+      }
+    }
+    wtError.value = msg
+  }
+}
 </script>
 
 <template>
@@ -234,6 +320,79 @@ async function removeRelation(relationId: number) {
           </div>
           <p v-if="!relatedProjects.length" class="text-xs text-brain-muted/60">연관 프로젝트 없음</p>
         </div>
+      </div>
+
+      <!-- Worktrees (병렬 에이전트 작업공간) -->
+      <div v-if="project.git_branch" class="glass-card p-4">
+        <div class="flex items-center justify-between mb-2.5">
+          <h3 class="text-[10px] font-semibold text-brain-muted uppercase tracking-[0.08em]">병렬 워크트리</h3>
+          <span class="text-[10px] text-brain-muted font-mono">{{ worktrees.length }}</span>
+        </div>
+
+        <!-- 생성 폼 -->
+        <div class="space-y-2 mb-3">
+          <div class="flex gap-2 flex-wrap">
+            <input
+              v-model="wtName"
+              type="text"
+              placeholder="브랜치명 (예: try-fix)"
+              class="flex-1 min-w-[140px] bg-brain-bg border border-brain-border rounded-md px-3 py-1.5 text-xs font-mono placeholder:text-brain-muted/60 focus:outline-none focus:border-neon-indigo/50"
+              @keydown.enter="createWorktrees"
+            />
+            <select
+              v-model.number="wtCount"
+              class="bg-brain-bg border border-brain-border rounded-md px-2 py-1.5 text-xs focus:outline-none"
+              title="병렬 개수 — 2개 이상이면 브랜치명-1, -2... 로 생성"
+            >
+              <option :value="1">×1</option>
+              <option :value="2">×2</option>
+              <option :value="3">×3</option>
+              <option :value="4">×4</option>
+            </select>
+            <button
+              @click="createWorktrees"
+              :disabled="!wtName.trim() || wtCreating"
+              class="px-3 py-1.5 rounded-md text-xs font-medium bg-neon-indigo text-white hover:bg-neon-indigo-deep transition-colors disabled:opacity-40"
+            >
+              {{ wtCreating ? '생성 중...' : '생성 + Claude 열기' }}
+            </button>
+          </div>
+          <input
+            v-model="wtPrompt"
+            type="text"
+            placeholder="시작 프롬프트 (선택 — 모든 워크트리의 Claude에 동일하게 전달됨)"
+            class="w-full bg-brain-bg border border-brain-border rounded-md px-3 py-1.5 text-xs placeholder:text-brain-muted/60 focus:outline-none focus:border-neon-indigo/50"
+          />
+          <p v-if="wtError" class="text-[11px] text-neon-amber">{{ wtError }}</p>
+        </div>
+
+        <!-- 목록 -->
+        <div v-if="worktrees.length" class="space-y-1">
+          <div
+            v-for="wt in worktrees"
+            :key="wt.path"
+            class="group flex items-center gap-2 px-2.5 py-2 rounded-md border border-brain-border bg-brain-bg"
+          >
+            <svg class="w-3.5 h-3.5 text-neon-purple shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-mono font-medium truncate">{{ wt.branch }}</p>
+              <p class="text-[10px] text-brain-muted font-mono truncate">{{ wt.path.replace('/Users/scoop/', '~/') }}</p>
+            </div>
+            <span v-if="wt.dirty > 0" class="text-[10px] font-mono text-neon-amber shrink-0">{{ wt.dirty }} 변경</span>
+            <button
+              @click="openWorktreeTab(wt); router.push('/workspace')"
+              class="px-2 py-1 rounded text-[11px] bg-neon-indigo/15 text-neon-indigo border border-neon-indigo/30 hover:bg-neon-indigo/25 transition-colors shrink-0"
+            >🤖 열기</button>
+            <button
+              @click="deleteWorktree(wt)"
+              class="w-6 h-6 rounded flex items-center justify-center text-xs text-brain-muted hover:text-neon-rose transition-colors shrink-0"
+              title="worktree 삭제 (미머지 브랜치는 보존)"
+            >✕</button>
+          </div>
+        </div>
+        <p v-else class="text-xs text-brain-muted/60">
+          워크트리 없음 — 브랜치명을 입력하고 생성하면 격리된 작업공간에서 Claude가 병렬로 작업합니다
+        </p>
       </div>
 
       <!-- Git Status -->

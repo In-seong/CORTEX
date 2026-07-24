@@ -1,15 +1,16 @@
 export interface WorkspaceTab {
-  id: number
+  id: number | string // worktree 탭은 'wt:<path>' 형태의 string id
   name: string
   path: string
   category: string
   has_claude_md: boolean
   mode: 'claude' | 'shell' | 'quick'
+  command?: string // 터미널 시작 시 실행할 커스텀 명령 (fan-out 프롬프트)
   [key: string]: any
 }
 
 const openTabs = ref<WorkspaceTab[]>([])
-const activeTabId = ref<number | null>(null)
+const activeTabId = ref<number | string | null>(null)
 
 export function useWorkspace() {
   function openProject(project: any, mode: 'claude' | 'shell' | 'quick' = 'claude') {
@@ -23,7 +24,7 @@ export function useWorkspace() {
     }
   }
 
-  function closeTab(id: number) {
+  function closeTab(id: number | string) {
     const idx = openTabs.value.findIndex(t => t.id === id)
     if (idx === -1) return
     const tab = openTabs.value[idx]
@@ -39,7 +40,7 @@ export function useWorkspace() {
     }
   }
 
-  function setTabMode(id: number, mode: 'claude' | 'shell' | 'quick') {
+  function setTabMode(id: number | string, mode: 'claude' | 'shell' | 'quick') {
     const tab = openTabs.value.find(t => t.id === id)
     if (tab) tab.mode = mode
   }

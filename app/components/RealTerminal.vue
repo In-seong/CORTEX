@@ -7,6 +7,7 @@ const props = defineProps<{
   projectPath: string
   projectName: string
   startClaude?: boolean
+  initialCommand?: string // fan-out 등 커스텀 시작 명령 (startClaude 기본 명령보다 우선)
 }>()
 
 const terminalRef = ref<HTMLElement>()
@@ -259,7 +260,7 @@ async function initTerminal() {
 }
 
 async function spawnNew() {
-  const command = props.startClaude ? '/Users/scoop/.local/bin/claude -c' : undefined
+  const command = props.initialCommand || (props.startClaude ? '/Users/scoop/.local/bin/claude -c' : undefined)
   try {
     const { id } = await $fetch('/api/terminal/spawn', {
       method: 'POST',

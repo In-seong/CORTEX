@@ -126,6 +126,7 @@ function launchIde(type: string, path: string) {
         :project-path="tab.path"
         :project-name="tab.name"
         :start-claude="tab.mode === 'claude'"
+        :initial-command="tab.mode === 'claude' ? tab.command : undefined"
       />
 
       <!-- Quick Prompt -->
