@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { VueFlow, useVueFlow } from '@vue-flow/core'
+import { VueFlow, useVueFlow, MarkerType } from '@vue-flow/core'
 
 const { data: projects } = await useFetch('/api/projects')
 const { data: relations } = await useFetch('/api/projects/relations')
@@ -22,23 +22,75 @@ const categoryColors: Record<string, string> = {
   'etc': '#64748b',
 }
 
+// 계층 레이아웃: relation_type='child'(모체→하위)로 트리를 만들고
+// 모체가 위, 하위가 아래로 오도록 레벨 배치. 계층에 안 속한 노드는 아래 그리드.
 const nodes = computed(() => {
   if (!projects.value) return []
   const list = projects.value as any[]
-  const cols = Math.ceil(Math.sqrt(list.length))
-  return list.map((p: any, i: number) => ({
+  const rels = (relations.value as any[]) || []
+
+  const childEdges = rels.filter(r => r.relation_type === 'child')
+  const hasParent = new Set(childEdges.map(r => String(r.target_id)))
+  const hasChild = new Set(childEdges.map(r => String(r.source_id)))
+  const inHierarchy = new Set([...hasParent, ...hasChild])
+
+  // 레벨 계산 (BFS, 루트 = 자식은 있고 부모는 없는 노드)
+  const level = new Map<string, number>()
+  const childrenOf = new Map<string, string[]>()
+  for (const r of childEdges) {
+    const s = String(r.source_id)
+    if (!childrenOf.has(s)) childrenOf.set(s, [])
+    childrenOf.get(s)!.push(String(r.target_id))
+  }
+  const queue: string[] = []
+  for (const id of hasChild) {
+    if (!hasParent.has(id)) { level.set(id, 0); queue.push(id) }
+  }
+  while (queue.length) {
+    const cur = queue.shift()!
+    for (const c of childrenOf.get(cur) || []) {
+      const nl = (level.get(cur) || 0) + 1
+      if (!level.has(c) || level.get(c)! < nl) {
+        level.set(c, nl)
+        queue.push(c)
+      }
+    }
+  }
+
+  // 레벨별 x 배치
+  const byLevel = new Map<number, string[]>()
+  for (const [id, lv] of level) {
+    if (!byLevel.has(lv)) byLevel.set(lv, [])
+    byLevel.get(lv)!.push(id)
+  }
+  const pos = new Map<string, { x: number; y: number }>()
+  for (const [lv, ids] of byLevel) {
+    ids.forEach((id, i) => {
+      pos.set(id, { x: i * 240 - (ids.length - 1) * 120, y: lv * 170 })
+    })
+  }
+
+  // 계층 밖 노드는 아래 그리드
+  const maxLevel = Math.max(0, ...byLevel.keys())
+  const others = list.filter(p => !inHierarchy.has(String(p.id)))
+  const cols = Math.ceil(Math.sqrt(others.length)) || 1
+  others.forEach((p, i) => {
+    pos.set(String(p.id), {
+      x: (i % cols) * 220 - (cols * 110),
+      y: (maxLevel + 2) * 170 + Math.floor(i / cols) * 130,
+    })
+  })
+
+  return list.map((p: any) => ({
     id: String(p.id),
-    position: {
-      x: (i % cols) * 220 + Math.random() * 40,
-      y: Math.floor(i / cols) * 140 + Math.random() * 30,
-    },
+    position: pos.get(String(p.id)) || { x: 0, y: 0 },
     data: {
       label: p.name,
       category: p.category,
       color: categoryColors[p.category] || '#64748b',
       hasClaude: p.has_claude_md,
       dirtyCount: p.git_dirty_count,
-      sessionSize: p.session_size_mb,
+      isRoot: level.get(String(p.id)) === 0,
     },
     type: 'custom',
   }))
@@ -46,14 +98,24 @@ const nodes = computed(() => {
 
 const edges = computed(() => {
   if (!relations.value) return []
-  return (relations.value as any[]).map((r: any) => ({
-    id: `e-${r.source_id}-${r.target_id}`,
-    source: String(r.source_id),
-    target: String(r.target_id),
-    label: r.relation_type,
-    animated: r.auto_detected === 1,
-    style: { stroke: categoryColors[r.source_category] || '#818cf8', strokeWidth: 2 },
-  }))
+  return (relations.value as any[]).map((r: any) => {
+    const isChild = r.relation_type === 'child'
+    return {
+      id: `e-${r.id}`,
+      source: String(r.source_id),
+      target: String(r.target_id),
+      label: r.label || (isChild ? '하위' : r.relation_type),
+      animated: r.auto_detected === 1,
+      markerEnd: MarkerType.ArrowClosed,
+      style: {
+        stroke: isChild ? '#818cf8' : (categoryColors[r.source_category] || '#4a4a5a'),
+        strokeWidth: isChild ? 2.5 : 1.5,
+        strokeDasharray: isChild ? undefined : '4 4',
+      },
+      labelStyle: { fill: '#a1a1a1', fontSize: 10 },
+      labelBgStyle: { fill: '#171717' },
+    }
+  })
 })
 
 function onNodeClick(event: any) {
@@ -87,6 +149,7 @@ onMounted(() => {
             }"
           >
             <div class="flex items-center gap-2">
+              <span v-if="data.isRoot" class="text-[10px]" title="모체">👑</span>
               <div class="w-2 h-2 rounded-full" :style="{ backgroundColor: data.color }" />
               <span class="text-xs font-medium text-brain-text whitespace-nowrap">{{ data.label }}</span>
               <span v-if="data.hasClaude" class="text-[10px]">🤖</span>

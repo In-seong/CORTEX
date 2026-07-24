@@ -4,7 +4,7 @@ export interface WorkspaceTab {
   path: string
   category: string
   has_claude_md: boolean
-  mode: 'claude' | 'shell' | 'quick' | 'review'
+  mode: 'claude' | 'shell' | 'quick' | 'review' | 'chat'
   command?: string // 터미널 시작 시 실행할 커스텀 명령 (fan-out 프롬프트)
   [key: string]: any
 }
@@ -13,7 +13,7 @@ const openTabs = ref<WorkspaceTab[]>([])
 const activeTabId = ref<number | string | null>(null)
 
 export function useWorkspace() {
-  function openProject(project: any, mode: 'claude' | 'shell' | 'quick' | 'review' = 'claude') {
+  function openProject(project: any, mode: 'claude' | 'shell' | 'quick' | 'review' | 'chat' = 'claude') {
     const existing = openTabs.value.find(t => t.id === project.id)
     if (existing) {
       activeTabId.value = existing.id
@@ -40,7 +40,7 @@ export function useWorkspace() {
     }
   }
 
-  function setTabMode(id: number | string, mode: 'claude' | 'shell' | 'quick' | 'review') {
+  function setTabMode(id: number | string, mode: 'claude' | 'shell' | 'quick' | 'review' | 'chat') {
     const tab = openTabs.value.find(t => t.id === id)
     if (tab) tab.mode = mode
   }

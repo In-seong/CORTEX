@@ -41,6 +41,7 @@ const todos = computed(() => detail.value?.todos as any[] || [])
 const showRelationPicker = ref(false)
 const relationSearch = ref('')
 const relationLabel = ref('')
+const relationDirection = ref<'child' | 'parent' | 'related'>('child')
 const syncing = ref(false)
 
 const relatedIds = computed(() => {
@@ -80,12 +81,14 @@ async function syncRelations() {
 
 async function addRelation(targetId: number) {
   const label = relationLabel.value.trim()
+  // child = source가 모체. '상위로 연결'이면 방향을 뒤집는다.
+  const isParent = relationDirection.value === 'parent'
   await $fetch('/api/projects/relations', {
     method: 'POST',
     body: {
-      source_id: project.value.id,
-      target_id: targetId,
-      relation_type: 'related',
+      source_id: isParent ? targetId : project.value.id,
+      target_id: isParent ? project.value.id : targetId,
+      relation_type: relationDirection.value === 'related' ? 'related' : 'child',
       label,
     },
   })
@@ -395,6 +398,9 @@ async function deleteWorktree(wt: any, force = false) {
         </p>
       </div>
 
+      <!-- Devices -->
+      <DevicePanel :project="project" />
+
       <!-- Automations -->
       <AutomationPanel :project-id="project.id" />
 
@@ -468,6 +474,25 @@ async function deleteWorktree(wt: any, force = false) {
           <!-- Header -->
           <div class="p-4 border-b border-brain-border">
             <h3 class="text-sm font-semibold mb-3">연관 프로젝트 추가</h3>
+
+            <!-- 관계 방향 -->
+            <div class="flex rounded-md border border-brain-border overflow-hidden text-[11px] mb-2.5">
+              <button
+                @click="relationDirection = 'child'"
+                class="flex-1 px-2 py-1.5 transition-colors"
+                :class="relationDirection === 'child' ? 'bg-neon-indigo/15 text-neon-indigo' : 'text-brain-muted hover:text-brain-text'"
+              >⬇ 하위로 (내가 모체)</button>
+              <button
+                @click="relationDirection = 'parent'"
+                class="flex-1 px-2 py-1.5 border-l border-brain-border transition-colors"
+                :class="relationDirection === 'parent' ? 'bg-neon-indigo/15 text-neon-indigo' : 'text-brain-muted hover:text-brain-text'"
+              >⬆ 상위로 (상대가 모체)</button>
+              <button
+                @click="relationDirection = 'related'"
+                class="flex-1 px-2 py-1.5 border-l border-brain-border transition-colors"
+                :class="relationDirection === 'related' ? 'bg-neon-indigo/15 text-neon-indigo' : 'text-brain-muted hover:text-brain-text'"
+              >↔ 단순 연관</button>
+            </div>
 
             <!-- Role Label -->
             <input
