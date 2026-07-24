@@ -24,6 +24,8 @@
     "better-sqlite3": "^11.9.1",
     "chart.js": "^4.4.9",
     "chokidar": "^4.0.3",
+    "dompurify": "^3.4.12",
+    "marked": "^18.0.7",
     "node-pty": "^1.2.0-beta.13",
     "nuxt": "3.17.5",
     "simple-git": "^3.27.0",
@@ -70,7 +72,9 @@
       {
         "from": "scoop-brain.db",
         "to": "scoop-brain.db",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "node_modules/better-sqlite3",
@@ -91,7 +95,9 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["arm64"]
+          "arch": [
+            "arm64"
+          ]
         }
       ],
       "darkModeSupport": true
@@ -101,7 +107,9 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },

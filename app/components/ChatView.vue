@@ -1,6 +1,19 @@
 <script setup lang="ts">
-// transcript(.jsonl) 폴링 → 채팅 버블 렌더 (orca native-chat 뷰 축약판).
-// 전송은 ClaudeComposer가 같은 PTY 세션으로 bracketed paste.
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
+
+// transcript(.jsonl) 폴링 → 채팅 렌더 (orca native-chat 뷰 축약판).
+// 어시스턴트 답변은 orca처럼 마크다운 문서형으로 렌더. 전송은 ClaudeComposer가 bracketed paste.
+
+marked.setOptions({ breaks: true, gfm: true })
+
+function renderMarkdown(text: string): string {
+  try {
+    return DOMPurify.sanitize(marked.parse(text, { async: false }) as string)
+  } catch {
+    return text
+  }
+}
 
 const props = defineProps<{
   projectPath: string
@@ -137,25 +150,23 @@ const toolIcons: Record<string, string> = {
           <p class="text-[10px] text-brain-muted/60 text-right mt-0.5 font-mono">{{ fmtTime(msg.ts) }}</p>
         </div>
 
-        <!-- Assistant bubble -->
-        <div v-else class="max-w-[92%] sm:max-w-[80%] min-w-0">
-          <div class="bg-brain-bg border border-brain-border rounded-xl rounded-bl-sm px-3.5 py-2.5 space-y-2">
-            <!-- Tool chips -->
-            <div v-if="msg.tools?.length" class="flex flex-wrap gap-1">
-              <span
-                v-for="(t, ti) in msg.tools.slice(0, 8)"
-                :key="ti"
-                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-brain-card border border-brain-border text-brain-muted max-w-full"
-                :title="t.input"
-              >
-                {{ toolIcons[t.name] || '🔧' }} {{ t.name }}
-                <span v-if="t.input" class="truncate max-w-[180px] opacity-60">{{ t.input }}</span>
-              </span>
-              <span v-if="msg.tools.length > 8" class="text-[10px] text-brain-muted">+{{ msg.tools.length - 8 }}</span>
-            </div>
-            <p v-if="msg.text" class="text-sm whitespace-pre-wrap break-words leading-relaxed">{{ msg.text }}</p>
+        <!-- Assistant — orca처럼 문서형 전체 폭 렌더 -->
+        <div v-else class="w-full min-w-0">
+          <!-- Tool chips -->
+          <div v-if="msg.tools?.length" class="flex flex-wrap gap-1 mb-1.5">
+            <span
+              v-for="(t, ti) in msg.tools.slice(0, 8)"
+              :key="ti"
+              class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-brain-card border border-brain-border text-brain-muted max-w-full"
+              :title="t.input"
+            >
+              {{ toolIcons[t.name] || '🔧' }} {{ t.name }}
+              <span v-if="t.input" class="truncate max-w-[180px] opacity-60">{{ t.input }}</span>
+            </span>
+            <span v-if="msg.tools.length > 8" class="text-[10px] text-brain-muted">+{{ msg.tools.length - 8 }}</span>
           </div>
-          <p class="text-[10px] text-brain-muted/60 mt-0.5 font-mono">🤖 {{ fmtTime(msg.ts) }}</p>
+          <div v-if="msg.text" class="chat-md text-sm leading-relaxed break-words" v-html="renderMarkdown(msg.text)" />
+          <p class="text-[10px] text-brain-muted/60 mt-1 font-mono">🤖 {{ fmtTime(msg.ts) }}</p>
         </div>
       </div>
     </div>
@@ -164,3 +175,46 @@ const toolIcons: Record<string, string> = {
     <ClaudeComposer :project-path="projectPath" :initial-command="initialCommand" @sent="autoScroll = true" />
   </div>
 </template>
+
+<style>
+/* 어시스턴트 마크다운 문서 스타일 (orca 문서형 렌더 대응) */
+.chat-md > *:first-child { margin-top: 0; }
+.chat-md > *:last-child { margin-bottom: 0; }
+.chat-md p { margin: 0.5em 0; }
+.chat-md h1, .chat-md h2, .chat-md h3, .chat-md h4 {
+  font-weight: 600; margin: 1em 0 0.4em; line-height: 1.3;
+}
+.chat-md h1 { font-size: 1.15rem; }
+.chat-md h2 { font-size: 1.05rem; }
+.chat-md h3, .chat-md h4 { font-size: 0.95rem; }
+.chat-md ul, .chat-md ol { margin: 0.4em 0; padding-left: 1.4em; }
+.chat-md ul { list-style: disc; }
+.chat-md ol { list-style: decimal; }
+.chat-md li { margin: 0.15em 0; }
+.chat-md li > ul, .chat-md li > ol { margin: 0.1em 0; }
+.chat-md code {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.85em;
+  background: rgba(255, 255, 255, 0.07); border-radius: 4px; padding: 0.1em 0.35em;
+}
+.chat-md pre {
+  background: #0a0a0a; border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px; padding: 0.75em 1em; margin: 0.6em 0;
+  overflow-x: auto; font-size: 0.8rem; line-height: 1.5;
+}
+.chat-md pre code { background: transparent; padding: 0; font-size: inherit; }
+.chat-md blockquote {
+  border-left: 3px solid rgba(129, 140, 248, 0.4); padding-left: 0.8em;
+  margin: 0.5em 0; color: #a1a1a1;
+}
+.chat-md table {
+  border-collapse: collapse; margin: 0.6em 0; font-size: 0.85em;
+  display: block; overflow-x: auto; max-width: 100%;
+}
+.chat-md th, .chat-md td {
+  border: 1px solid rgba(255, 255, 255, 0.1); padding: 0.35em 0.7em; text-align: left;
+}
+.chat-md th { background: rgba(255, 255, 255, 0.04); font-weight: 600; }
+.chat-md a { color: #818cf8; text-decoration: underline; }
+.chat-md hr { border: none; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 0.8em 0; }
+.chat-md strong { font-weight: 600; }
+</style>
