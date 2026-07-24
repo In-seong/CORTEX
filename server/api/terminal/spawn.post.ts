@@ -1,5 +1,19 @@
 import * as pty from 'node-pty'
 import { randomUUID } from 'crypto'
+import { readdirSync, existsSync } from 'fs'
+import { join } from 'path'
+import { homedir } from 'os'
+
+// claude -c 는 이전 대화가 없으면 "No conversation found to continue"로 즉시 종료된다.
+// 해당 cwd의 transcript(.jsonl)가 하나도 없으면 -c 를 제거해 새 대화로 시작.
+function adjustClaudeContinue(command: string, cwd: string): string {
+  if (!command || !/\bclaude\b/.test(command) || !/\s-c(\s|$)/.test(command)) return command
+  const dir = join(homedir(), '.claude', 'projects', cwd.replace(/\//g, '-'))
+  try {
+    if (existsSync(dir) && readdirSync(dir).some(f => f.endsWith('.jsonl'))) return command
+  } catch {}
+  return command.replace(/\s-c(?=\s|$)/, '')
+}
 
 // orca terminal-main-owned-state 패턴의 축약판:
 // 서버가 출력 링버퍼(2MB)+단조 seq를 소유하고, 클라이언트는 seq 기준으로 replay/재동기화한다.
@@ -64,8 +78,9 @@ export default defineEventHandler(async (event) => {
   const currentPath = process.env.PATH || '/usr/bin:/bin'
   const fullPath = [...extraPaths, ...currentPath.split(':')].filter((v, i, a) => a.indexOf(v) === i).join(':')
 
-  const args = command
-    ? ['-l', '-c', command]
+  const effectiveCommand = command ? adjustClaudeContinue(command, cwd) : command
+  const args = effectiveCommand
+    ? ['-l', '-c', effectiveCommand]
     : ['-l']
 
   const term = pty.spawn(shell, args, {
