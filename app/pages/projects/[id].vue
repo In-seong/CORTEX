@@ -42,8 +42,30 @@ const todos = computed(() => detail.value?.todos as any[] || [])
 const showRelationPicker = ref(false)
 const relationSearch = ref('')
 const relationLabel = ref('')
+const relationNote = ref('')
 const relationDirection = ref<'child' | 'parent' | 'related'>('child')
 const syncing = ref(false)
+
+// 기존 관계 지침 편집
+const editingRel = ref<number | null>(null)
+const editLabel = ref('')
+const editNote = ref('')
+
+function startEditRel(rel: any) {
+  editingRel.value = editingRel.value === rel.id ? null : rel.id
+  editLabel.value = rel.label || ''
+  editNote.value = rel.note || ''
+}
+
+async function saveRelEdit(rel: any) {
+  await $fetch('/api/projects/relations', {
+    method: 'PUT',
+    body: { id: rel.id, label: editLabel.value.trim(), note: editNote.value.trim() },
+  })
+  editingRel.value = null
+  await refresh()
+  await syncRelations()
+}
 
 const relatedIds = computed(() => {
   const ids = new Set<number>()
@@ -96,11 +118,13 @@ async function addRelation(targetId: number) {
       target_id: isParent ? project.value.id : targetId,
       relation_type: relationDirection.value === 'related' ? 'related' : 'child',
       label,
+      note: relationNote.value.trim(),
     },
   })
   showRelationPicker.value = false
   relationSearch.value = ''
   relationLabel.value = ''
+  relationNote.value = ''
   await refresh()
   await syncRelations()
 }
@@ -312,6 +336,8 @@ async function deleteWorktree(wt: any, force = false) {
               class="group flex flex-col px-2 py-1.5 rounded-md text-sm text-brain-text-secondary hover:bg-brain-border transition-colors"
             >
               <div class="flex items-center gap-2">
+                <span v-if="rel.relation_type === 'child' && rel.source_id === project?.id" class="text-[10px]" title="하위">⬇</span>
+                <span v-else-if="rel.relation_type === 'child'" class="text-[10px]" title="모체">⬆</span>
                 <NuxtLink
                   :to="`/projects/${rel.source_id === project?.id ? rel.target_id : rel.source_id}`"
                   class="flex items-center gap-2 flex-1 min-w-0 hover:text-brain-text"
@@ -319,12 +345,37 @@ async function deleteWorktree(wt: any, force = false) {
                   <span class="text-neon-indigo text-xs">🔗</span>
                   <span class="truncate text-[13px] font-medium">{{ rel.source_id === project?.id ? rel.target_name : rel.source_name }}</span>
                 </NuxtLink>
+                <button
+                  @click="startEditRel(rel)"
+                  class="w-4 h-4 rounded flex items-center justify-center text-[11px] opacity-0 group-hover:opacity-100 text-brain-muted hover:text-neon-indigo"
+                  title="역할·지침 편집"
+                >✎</button>
                 <span
                   @click="removeRelation(rel.id)"
                   class="w-4 h-4 rounded flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 text-brain-muted hover:text-neon-rose cursor-pointer"
                 >✕</span>
               </div>
-              <span v-if="rel.label" class="text-xs text-brain-muted ml-6 mt-0.5">{{ rel.label }}</span>
+              <span v-if="rel.label && editingRel !== rel.id" class="text-xs text-brain-muted ml-6 mt-0.5">{{ rel.label }}</span>
+              <p v-if="rel.note && editingRel !== rel.id" class="text-[11px] text-brain-muted/70 ml-6 mt-0.5 line-clamp-2">📝 {{ rel.note }}</p>
+
+              <!-- 편집 폼 -->
+              <div v-if="editingRel === rel.id" class="ml-6 mt-1.5 space-y-1.5" @click.stop>
+                <input
+                  v-model="editLabel"
+                  placeholder="역할 (예: 기사앱 프론트)"
+                  class="w-full bg-brain-bg border border-brain-border rounded-md px-2.5 py-1.5 text-xs focus:outline-none focus:border-neon-indigo/50"
+                />
+                <textarea
+                  v-model="editNote"
+                  rows="3"
+                  placeholder="지침 메모 — 이 프로젝트가 모체와 어떤 관계인지, 작업 시 참고할 점 (Claude 서브에이전트에 반영됨)"
+                  class="w-full bg-brain-bg border border-brain-border rounded-md px-2.5 py-1.5 text-xs placeholder:text-brain-muted/60 focus:outline-none focus:border-neon-indigo/50 resize-none"
+                />
+                <div class="flex items-center gap-1.5">
+                  <button @click="saveRelEdit(rel)" class="px-2.5 py-1 rounded-md text-xs bg-neon-indigo text-white hover:bg-neon-indigo-deep transition-colors">저장 & 동기화</button>
+                  <button @click="editingRel = null" class="px-2.5 py-1 rounded-md text-xs text-brain-muted hover:text-brain-text">취소</button>
+                </div>
+              </div>
             </div>
           </div>
           <p v-if="!relatedProjects.length" class="text-xs text-brain-muted/60">연관 프로젝트 없음</p>
@@ -506,6 +557,14 @@ async function deleteWorktree(wt: any, force = false) {
               type="text"
               placeholder="역할 설명 (예: 사용자 앱, 백엔드 API, 기사 앱...)"
               class="w-full bg-brain-bg border border-brain-border rounded-md px-3 py-2 text-sm placeholder:text-brain-muted/60 focus:outline-none focus:border-neon-indigo/50 transition-colors mb-2.5"
+            />
+
+            <!-- Persona Note -->
+            <textarea
+              v-model="relationNote"
+              rows="2"
+              placeholder="지침 메모 (선택) — 이 프로젝트가 모체와 어떤 관계인지, 작업 시 참고할 점. Claude 서브에이전트 페르소나로 반영됩니다."
+              class="w-full bg-brain-bg border border-brain-border rounded-md px-3 py-2 text-sm placeholder:text-brain-muted/60 focus:outline-none focus:border-neon-indigo/50 transition-colors resize-none mb-2.5"
             />
 
             <!-- Search -->

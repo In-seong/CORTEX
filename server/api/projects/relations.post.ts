@@ -2,7 +2,7 @@ import { getDb } from '../../db'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
-  const { source_id, target_id, relation_type = 'reference', label = '' } = body
+  const { source_id, target_id, relation_type = 'reference', label = '', note = '' } = body
 
   if (!source_id || !target_id) {
     throw createError({ statusCode: 400, message: 'source_id and target_id required' })
@@ -22,8 +22,8 @@ export default defineEventHandler(async (event) => {
   }
 
   const result = db.prepare(
-    'INSERT INTO project_relations (source_id, target_id, relation_type, label, auto_detected, confirmed) VALUES (?, ?, ?, ?, 0, 1)'
-  ).run(source_id, target_id, relation_type, label)
+    'INSERT INTO project_relations (source_id, target_id, relation_type, label, note, auto_detected, confirmed) VALUES (?, ?, ?, ?, ?, 0, 1)'
+  ).run(source_id, target_id, relation_type, label, note)
 
   return { id: result.lastInsertRowid }
 })

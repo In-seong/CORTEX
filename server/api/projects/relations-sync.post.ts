@@ -53,6 +53,17 @@ export default defineEventHandler(async (event) => {
       lines.push(`| ${name} | ${label} | \`${path}\` |`)
     }
 
+    // note(지침)가 있는 관계는 상세 설명으로 추가
+    const withNotes = relations.filter(r => (r.note || '').trim())
+    if (withNotes.length) {
+      lines.push('', '### 연관 프로젝트 지침')
+      for (const rel of withNotes) {
+        const isSource = rel.source_id === project_id
+        const name = isSource ? rel.target_name : rel.source_name
+        lines.push('', `**${name}** (${rel.label || '연관'}): ${rel.note.trim()}`)
+      }
+    }
+
     lines.push('', sectionMarkerEnd, '')
     relationsSection = lines.join('\n')
   }
@@ -101,9 +112,13 @@ export default defineEventHandler(async (event) => {
       techList = techStack || ''
     }
 
+    const note = (rel.note || '').trim()
+    // note를 description에도 일부 반영해 에이전트 자동 선택 정확도를 높임
+    const descNote = note ? ` ${note.split('\n')[0].slice(0, 120)}` : ''
+
     const agentContent = `---
 name: ${slug}
-description: ${label} — ${name} 프로젝트. ${category} 카테고리.${techList ? ` 기술스택: ${techList}.` : ''} 연관 프로젝트의 코드를 읽고 분석할 때 사용합니다.
+description: ${label} — ${name} 프로젝트. ${category} 카테고리.${techList ? ` 기술스택: ${techList}.` : ''}${descNote} 연관 프로젝트의 코드를 읽고 분석할 때 사용합니다.
 tools: Read, Grep, Glob, Bash, LSP
 ---
 
@@ -117,7 +132,7 @@ ${techList ? `**기술 스택**: ${techList}` : ''}
 
 이 에이전트는 연관 프로젝트 \`${name}\`의 코드를 탐색하고 분석하는 데 사용됩니다.
 현재 프로젝트(${project.name})에서의 역할: **${label}**
-
+${note ? `\n## 이 프로젝트와의 관계 지침\n\n${note}\n` : ''}
 ### 주요 경로
 - **프로젝트 루트**: \`${path}\`
 `

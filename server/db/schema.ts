@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS project_relations (
   target_id INTEGER NOT NULL,
   relation_type TEXT NOT NULL DEFAULT 'reference',
   label TEXT DEFAULT '',
+  note TEXT DEFAULT '',
   auto_detected INTEGER DEFAULT 0,
   confirmed INTEGER DEFAULT 1,
   created_at TEXT DEFAULT (datetime('now')),
