@@ -2,9 +2,9 @@
   "name": "CORTEX",
   "short_name": "CORTEX",
   "description": "Development Nerve Center",
-  "start_url": "http://localhost:7777/",
+  "start_url": "/",
   "display": "standalone",
-  "background_color": "#08080f",
+  "background_color": "#0a0a0a",
   "theme_color": "#818cf8",
   "icons": [
     {

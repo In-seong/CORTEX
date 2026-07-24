@@ -1,8 +1,41 @@
 # CORTEX WORKLOG
 
 ## 📌 현재 진행 중 / 다음 할 일
-- **디자인 수정 예정**: 사용자가 UI 디자인 변경을 원함 (구체적 내용 미정)
-- 모바일 워크스페이스 터미널 UI 사용자 피드백 대기 중
+- **UI 개편 방향 확정 중**: 커스텀 JARVIS 네온 → "익숙한 UI"(GPT/Claude/orca식 좌측 사이드바 + 우측 메인) 전환 검토. 디자인 분석 진행 중
+- **orca 흡수 로드맵** (분석 완료, 착수 대기): Phase 1 에이전트 상태 시스템(hook→POST /api/agent-hook, 4-state, unread) → 2 터미널 생존성(WS+링버퍼+seq replay) → 3 사용량 추적(.jsonl 스캔) → 4 알림/모바일(WS seq catch-up) → 5 병렬 worktree → 6 diff리뷰/자동화
+- **미해결**: CORTEX.app(Electron)이 `::1:7777` 점유 → localhost 500 유발. 앱 종료/포트 분리/Electron 폐기 중 결정 필요
+- 앞으로 작업은 feature 브랜치로 (git 사용 시작됨)
+
+---
+
+## 2026-07-24 — orca 분석 + GitHub 저장소 개설
+
+**한 일**
+- 프로젝트 전체 코드 리뷰(요청: 읽고 확인만). 500 재발의 진짜 원인 발견: 빌드 꼬임이 아니라 **CORTEX.app(Electron)이 구버전 번들 서버를 `::1:7777`(IPv6)에 바인딩** → localhost가 IPv6로 풀리면 500. launchd 서버(127.0.0.1)는 정상 200
+- `/Users/scoop/Downloads/orca-main` (stablyai orca, MIT, 병렬 에이전트 IDE) 심층 분석 — 탐색 에이전트 3개 병렬 (메인프로세스/렌더러UX/원격·모바일·자동화)
+- git init + GitHub 연결: `https://github.com/In-seong/CORTEX.git`, 첫 커밋 `6aef65c`(52파일) 푸시. .gitignore 보강(dist-electron 636MB, logs, *.db-wal, .claude-tmp 등)
+
+**orca 분석 핵심 (재사용할 설계)**
+- 단일 RPC 서버 + 다중 클라이언트(웹/모바일/CLI 동일 WS RPC). `orca serve` = 헤드리스 서버+웹번들 셀프서빙
+- 에이전트 상태는 터미널 파싱 아닌 **CLI native hook → HTTP POST**로만: `working/blocked/waiting/done` 4-state (`src/shared/agent-hook-listener.ts` 이식 가치 최고)
+- 알림: FCM 없이 **WS 스트림 + 단조증가 seq + getMissedSince() catch-up** (`mobile-notification-replay.ts`)
+- 터미널: 서버가 bounded 출력 모델 소유, 클라이언트는 스냅샷+seq로 재동기화 (`docs/terminal-main-owned-state.md`)
+- 사용량: `~/.claude/projects/**/*.jsonl` 스캔+dedupe(messageId:requestId)+cwd귀속+가격표 (`src/main/claude-usage/` 거의 그대로 이식 가능)
+- worktree: create/list/remove + "미머지 커밋 절대 유실 금지" 방어 로직 (`src/main/git/worktree.ts`)
+- UX: 3열 셸(좌 프로젝트→worktree→에이전트 트리 / 중앙 activeView / 우 탐색기·소스컨트롤), Cmd+K 통합 팔레트, diff 인라인 "AI에게 메모"→에이전트 일괄 전송, 상태색 관례(emerald=완료, amber=needs attention)
+- 스택: Tailwind v4 CSS-first + shadcn(new-york-v4) CSS 변수 테마, zustand 슬라이스 ~40개 단일 스토어
+
+**결정/맥락**
+- orca는 상용급 대형(React19+Electron+Expo모바일+relay) → 코드 통이식 불가, **설계·파서·알고리즘 단위 이식**. 단 `src/shared`는 Electron 무의존 순수 TS라 거의 복사 가능
+- CORTEX 우위 영역(홈스캔·관계그래프·TODO·카테고리)은 유지 — "orca 복제"가 아니라 "CORTEX 대시보드 + orca 오케스트레이션"
+- 코드 리뷰 소견: prompt.post.ts abort 시 controller closed 예외 누적, upload-image .claude-tmp 미정리, scanner.ts iOS 감지(glob 불가), 4페이지 헤더 중복(레이아웃 추출 필요)
+
+**다음 할 일**
+- 디자인/UI 분석 → 익숙한 레이아웃(좌 사이드바+우 메인)으로 개편안 확정
+- CORTEX.app ::1:7777 점유 문제 정리
+- Phase 1 (에이전트 상태 시스템) 착수
+
+**상태**: 진행중
 
 ---
 
