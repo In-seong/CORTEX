@@ -108,12 +108,12 @@ const edges = computed(() => {
       animated: r.auto_detected === 1,
       markerEnd: MarkerType.ArrowClosed,
       style: {
-        stroke: isChild ? '#818cf8' : (categoryColors[r.source_category] || '#4a4a5a'),
+        stroke: isChild ? '#d97757' : (categoryColors[r.source_category] || '#6b6862'),
         strokeWidth: isChild ? 2.5 : 1.5,
         strokeDasharray: isChild ? undefined : '4 4',
       },
-      labelStyle: { fill: '#a1a1a1', fontSize: 10 },
-      labelBgStyle: { fill: '#171717' },
+      labelStyle: { fill: '#b7b4aa', fontSize: 10 },
+      labelBgStyle: { fill: '#30302e' },
     }
   })
 })
@@ -145,7 +145,7 @@ onMounted(() => {
             class="px-3.5 py-2 rounded-lg border cursor-pointer transition-transform hover:scale-105"
             :style="{
               borderColor: data.color + '50',
-              backgroundColor: '#171717',
+              backgroundColor: '#30302e',
             }"
           >
             <div class="flex items-center gap-2">

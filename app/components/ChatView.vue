@@ -197,14 +197,14 @@ const toolIcons: Record<string, string> = {
   background: rgba(255, 255, 255, 0.07); border-radius: 4px; padding: 0.1em 0.35em;
 }
 .chat-md pre {
-  background: #0a0a0a; border: 1px solid rgba(255, 255, 255, 0.07);
+  background: #1e1d1b; border: 1px solid rgba(255, 255, 255, 0.10);
   border-radius: 8px; padding: 0.75em 1em; margin: 0.6em 0;
   overflow-x: auto; font-size: 0.8rem; line-height: 1.5;
 }
 .chat-md pre code { background: transparent; padding: 0; font-size: inherit; }
 .chat-md blockquote {
-  border-left: 3px solid rgba(129, 140, 248, 0.4); padding-left: 0.8em;
-  margin: 0.5em 0; color: #a1a1a1;
+  border-left: 3px solid rgba(217, 119, 87, 0.5); padding-left: 0.8em;
+  margin: 0.5em 0; color: #b7b4aa;
 }
 .chat-md table {
   border-collapse: collapse; margin: 0.6em 0; font-size: 0.85em;
@@ -214,7 +214,7 @@ const toolIcons: Record<string, string> = {
   border: 1px solid rgba(255, 255, 255, 0.1); padding: 0.35em 0.7em; text-align: left;
 }
 .chat-md th { background: rgba(255, 255, 255, 0.04); font-weight: 600; }
-.chat-md a { color: #818cf8; text-decoration: underline; }
+.chat-md a { color: #d97757; text-decoration: underline; }
 .chat-md hr { border: none; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 0.8em 0; }
 .chat-md strong { font-weight: 600; }
 </style>
