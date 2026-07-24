@@ -1,19 +1,26 @@
 <script setup lang="ts">
-const { data: projects } = await useFetch('/api/projects')
+// 후보(미등록)까지 전체를 불러와 picker에서 바로 등록+열기 가능하게
+const { data: projects } = await useFetch('/api/projects', { query: { all: 'true' } })
 const { openTabs, activeTabId, activeProject, openProject, closeTab, setTabMode } = useWorkspace()
 
 const showProjectPicker = ref(false)
 const searchQuery = ref('')
 
-function pickProject(project: any) {
-  openProject(project)
+async function pickProject(project: any) {
+  // 미등록 프로젝트면 등록(활성화) 후 사이드바 등 갱신
+  if (!project.is_active) {
+    await $fetch('/api/projects/activate', { method: 'POST', body: { id: project.id } }).catch(() => {})
+    project.is_active = 1
+    await refreshNuxtData()
+  }
+  openProject(project, 'chat')
   showProjectPicker.value = false
   searchQuery.value = ''
 }
 
 const filteredProjects = computed(() => {
   if (!projects.value) return []
-  let result = projects.value as any[]
+  let result = [...(projects.value as any[])]
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase()
     result = result.filter(p =>
@@ -21,7 +28,9 @@ const filteredProjects = computed(() => {
       p.category.toLowerCase().includes(q)
     )
   }
-  return result.slice(0, 20)
+  // 등록된 것 먼저, 그다음 후보
+  result.sort((a, b) => (b.is_active - a.is_active))
+  return result.slice(0, 30)
 })
 
 function launchIde(type: string, path: string) {
@@ -237,9 +246,9 @@ function toggleSplit() {
                 <p class="text-xs text-brain-muted font-mono">{{ project.category }}</p>
               </div>
               <div class="flex items-center gap-2 shrink-0">
-                <span v-if="project.git_dirty_count > 0" class="text-xs text-neon-amber font-mono">{{ project.git_dirty_count }} dirty</span>
-                <span v-if="project.session_count > 0" class="text-xs text-brain-muted">💬{{ project.session_count }}</span>
+                <span v-if="project.git_dirty_count > 0" class="text-xs text-neon-amber font-mono">{{ project.git_dirty_count }}</span>
                 <span v-if="openTabs.some(t => t.id === project.id)" class="text-xs text-neon-indigo">열림</span>
+                <span v-else-if="!project.is_active" class="text-xs text-neon-emerald">+ 등록·열기</span>
               </div>
             </button>
           </div>
