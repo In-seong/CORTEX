@@ -107,6 +107,28 @@ CREATE TABLE IF NOT EXISTS agent_status (
   FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL
 );
 
+CREATE TABLE IF NOT EXISTS automations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id INTEGER NOT NULL,
+  prompt TEXT NOT NULL,
+  schedule TEXT NOT NULL DEFAULT 'daily',
+  run_time TEXT DEFAULT '09:00',
+  enabled INTEGER DEFAULT 1,
+  last_run_at TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS automation_runs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  automation_id INTEGER NOT NULL,
+  status TEXT DEFAULT 'running',
+  output TEXT DEFAULT '',
+  started_at TEXT DEFAULT (datetime('now')),
+  finished_at TEXT,
+  FOREIGN KEY (automation_id) REFERENCES automations(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS notifications (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   type TEXT NOT NULL,

@@ -1,8 +1,20 @@
 # CORTEX WORKLOG
 
 ## 📌 현재 진행 중 / 다음 할 일
-- **Phase 1 완료** → 다음: Phase 2 터미널 생존성(WS+서버측 링버퍼+seq replay) → 3 사용량 추적(.jsonl 스캔) → 4 알림/모바일(WS seq catch-up, PWA 푸시) → 5 병렬 worktree → 6 diff리뷰/자동화
-- Electron 폐지 확정(웹 단일화). electron/ 디렉토리·package.json 빌드 설정 추후 정리
+- **orca 로드맵 Phase 1~6 전부 완료** (main 머지). 사용자 수동 테스트 대기 — 시나리오: `claudedocs/TEST_SCENARIOS.md`
+- 남은 개선 후보: 서버 재시작 시 PTY 소멸(데몬 분리 필요시), Web Push(PWA 백그라운드), Cmd+K 팔레트, agent-hook 외부 노출 인증, electron/ 잔재 정리
+- 주의: 훅/자동화가 실행하는 claude는 `/Users/scoop/.local/bin/claude` 고정 경로
+
+---
+
+## 2026-07-24 (4) — Phase 2~6 일괄 구현 완료
+**Phase 2 터미널 생존성**: 서버 링버퍼(2MB)+seq, SSE `?since=` replay, localStorage 세션 id 재부착, 1.5s 백오프 자동 재연결, 언마운트≠kill(탭닫기/종료만 kill, kill-by-cwd)
+**Phase 3 사용량**: usage_turns/scanned_files, dedupe(messageId:requestId), 증분 스캔(2.3s/38파일/24,820턴), GET /api/usage(일별/모델/프로젝트), 대시보드 UsagePanel(비용 추정 라벨)
+**Phase 4 알림**: notifications(id=seq), hook 전이 시 생성(90s dedupe), ?since catch-up, 벨+뱃지+드롭다운(데스크탑/모바일), 브라우저 Notification, 7일 자동정리
+**Phase 5 worktree**: ~/.cortex-worktrees 격리, --no-track+base config, clean검사/미머지 브랜치 보존(-d), count 2-4 fan-out + 시작 프롬프트 → Claude 탭 자동 오픈, string 탭 id('wt:')
+**Phase 6 리뷰/자동화**: git status/diff/commit API, untracked 합성 diff(ls-files로 tracked 무변경 구분 — 버그 잡음), 워크스페이스 '📝 리뷰' 모드(diff 라인 클릭→코멘트→Claude 터미널로 일괄 전송), AI 커밋 메시지(claude -p), automations(daily/hourly, 60s tick, 20분 상한, 동시 1개, 완료 알림) — run-now e2e 검증됨
+**검증**: 각 페이즈 API curl 테스트 + 자동화 실제 claude -p 실행 성공 + 스크린샷 확인
+**상태**: 완료
 
 ---
 

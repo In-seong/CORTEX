@@ -395,6 +395,9 @@ async function deleteWorktree(wt: any, force = false) {
         </p>
       </div>
 
+      <!-- Automations -->
+      <AutomationPanel :project-id="project.id" />
+
       <!-- Git Status -->
       <div v-if="project.git_branch" class="glass-card p-4">
         <h3 class="text-[10px] font-semibold text-brain-muted mb-2.5 uppercase tracking-[0.08em]">GIT</h3>

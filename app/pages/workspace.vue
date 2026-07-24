@@ -117,6 +117,13 @@ function launchIde(type: string, path: string) {
         >
           ⚡ 빠른질문
         </button>
+        <button
+          @click="setTabMode(tab.id, 'review')"
+          class="px-3 py-1.5 rounded-md text-xs sm:text-[13px] border transition-colors whitespace-nowrap"
+          :class="tab.mode === 'review' ? 'bg-neon-purple/15 text-neon-purple border-neon-purple/30' : 'border-brain-border text-brain-muted hover:text-brain-text'"
+        >
+          📝 리뷰
+        </button>
       </div>
 
       <!-- Real Terminal (Claude or Shell) - stays alive -->
@@ -127,6 +134,14 @@ function launchIde(type: string, path: string) {
         :project-name="tab.name"
         :start-claude="tab.mode === 'claude'"
         :initial-command="tab.mode === 'claude' ? tab.command : undefined"
+      />
+
+      <!-- Source Control / Review -->
+      <SourceControlPanel
+        v-else-if="tab.mode === 'review'"
+        :key="`review-${tab.id}`"
+        :project-path="tab.path"
+        :project-name="tab.name"
       />
 
       <!-- Quick Prompt -->
