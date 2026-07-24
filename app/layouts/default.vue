@@ -8,6 +8,9 @@ const showMobileNav = ref(false)
 const scanning = ref(false)
 const sidebarSearch = ref('')
 
+const { isDark, toggle: toggleTheme, init: initTheme } = useTheme()
+onMounted(initTheme)
+
 const navItems = [
   { to: '/', label: '대시보드' },
   { to: '/workspace', label: '워크스페이스' },
@@ -182,10 +185,18 @@ watch(() => route.path, () => { showMobileNav.value = false })
           <h1 class="text-sm font-semibold leading-none">CORTEX</h1>
           <p class="text-[10px] text-brain-muted font-mono mt-0.5">dev nerve center</p>
         </div>
-        <div class="ml-auto flex items-center gap-2">
+        <div class="ml-auto flex items-center gap-1">
+          <button
+            @click="toggleTheme"
+            class="w-7 h-7 rounded-md flex items-center justify-center text-brain-muted hover:text-brain-text hover:bg-brain-border transition-colors"
+            :title="isDark ? '라이트 모드' : '다크 모드'"
+          >
+            <svg v-if="isDark" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+            <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+          </button>
           <button
             @click="openNotifPanel"
-            class="relative w-7 h-7 rounded-md flex items-center justify-center text-brain-muted hover:text-brain-text hover:bg-white/[0.06] transition-colors"
+            class="relative w-7 h-7 rounded-md flex items-center justify-center text-brain-muted hover:text-brain-text hover:bg-brain-border transition-colors"
             title="알림"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
@@ -207,8 +218,8 @@ watch(() => route.path, () => { showMobileNav.value = false })
           :to="item.to"
           class="flex items-center gap-2 px-3 py-1.5 rounded-md text-[13px] transition-colors"
           :class="isActive(item.to)
-            ? 'bg-white/[0.06] text-brain-text font-medium'
-            : 'text-brain-text-secondary hover:bg-white/[0.04] hover:text-brain-text'"
+            ? 'bg-brain-border text-brain-text font-medium'
+            : 'text-brain-text-secondary hover:bg-brain-border hover:text-brain-text'"
         >
           {{ item.label }}
           <span
@@ -226,7 +237,7 @@ watch(() => route.path, () => { showMobileNav.value = false })
             v-for="a in activeAgents"
             :key="a.session_id"
             @click="openAgent(a)"
-            class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left hover:bg-white/[0.04] transition-colors"
+            class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left hover:bg-brain-border transition-colors"
           >
             <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="agentDotClass(a)" />
             <span class="text-[13px] truncate" :class="a.unread ? 'text-brain-text font-medium' : 'text-brain-text-secondary'">
@@ -247,7 +258,7 @@ watch(() => route.path, () => { showMobileNav.value = false })
           <button
             @click="scanProjects"
             :disabled="scanning"
-            class="w-6 h-6 rounded flex items-center justify-center text-xs text-brain-muted hover:text-brain-text hover:bg-white/[0.06] transition-colors disabled:opacity-50"
+            class="w-6 h-6 rounded flex items-center justify-center text-xs text-brain-muted hover:text-brain-text hover:bg-brain-border transition-colors disabled:opacity-50"
             :class="scanning ? 'animate-spin' : ''"
             title="프로젝트 스캔"
           >⟳</button>
@@ -267,8 +278,8 @@ watch(() => route.path, () => { showMobileNav.value = false })
             @click="openInWorkspace(p)"
             class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors group"
             :class="openTabs.some(t => t.id === p.id)
-              ? 'bg-white/[0.06]'
-              : 'hover:bg-white/[0.04]'"
+              ? 'bg-brain-border'
+              : 'hover:bg-brain-border'"
           >
             <span class="text-sm shrink-0">{{ p.icon || '📁' }}</span>
             <span class="text-[13px] truncate flex-1" :class="openTabs.some(t => t.id === p.id) ? 'text-brain-text' : 'text-brain-text-secondary group-hover:text-brain-text'">
@@ -304,7 +315,15 @@ watch(() => route.path, () => { showMobileNav.value = false })
         <span class="text-sm">🧠</span>
         <span class="text-sm font-semibold">CORTEX</span>
       </div>
-      <div class="ml-auto flex items-center gap-2">
+      <div class="ml-auto flex items-center gap-1">
+        <button
+          @click="toggleTheme"
+          class="w-8 h-8 rounded-md flex items-center justify-center text-brain-text-secondary hover:text-brain-text"
+          :title="isDark ? '라이트 모드' : '다크 모드'"
+        >
+          <svg v-if="isDark" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+          <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+        </button>
         <button
           @click="openNotifPanel"
           class="relative w-8 h-8 rounded-md flex items-center justify-center text-brain-text-secondary hover:text-brain-text"
@@ -339,7 +358,7 @@ watch(() => route.path, () => { showMobileNav.value = false })
               v-for="n in notifications"
               :key="n.id"
               @click="clickNotification(n)"
-              class="w-full text-left px-3 py-2 border-b border-brain-border/50 hover:bg-white/[0.04] transition-colors"
+              class="w-full text-left px-3 py-2 border-b border-brain-border/50 hover:bg-brain-border transition-colors"
             >
               <p class="text-xs" :class="n.read ? 'text-brain-text-secondary' : 'text-brain-text font-medium'">{{ n.title }}</p>
               <p v-if="n.body" class="text-[11px] text-brain-muted truncate mt-0.5">{{ n.body }}</p>
@@ -367,7 +386,7 @@ watch(() => route.path, () => { showMobileNav.value = false })
               :key="item.to"
               :to="item.to"
               class="flex items-center px-3 py-2 rounded-md text-sm transition-colors"
-              :class="isActive(item.to) ? 'bg-white/[0.06] text-brain-text font-medium' : 'text-brain-text-secondary'"
+              :class="isActive(item.to) ? 'bg-brain-border text-brain-text font-medium' : 'text-brain-text-secondary'"
             >
               {{ item.label }}
             </NuxtLink>

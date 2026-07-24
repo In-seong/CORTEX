@@ -70,7 +70,7 @@ const visibleDaily = computed(() => {
         <button
           @click="rescan"
           :disabled="scanning"
-          class="w-6 h-6 rounded flex items-center justify-center text-xs text-brain-muted hover:text-brain-text hover:bg-white/[0.06] transition-colors disabled:opacity-50"
+          class="w-6 h-6 rounded flex items-center justify-center text-xs text-brain-muted hover:text-brain-text hover:bg-brain-border transition-colors disabled:opacity-50"
           :class="scanning ? 'animate-spin' : ''"
           title="다시 스캔"
         >⟳</button>

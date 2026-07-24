@@ -8,13 +8,16 @@
 
 <style>
 html {
-  background-color: #262624;
+  background-color: rgb(var(--c-bg));
+  color-scheme: light;
+}
+html.dark {
   color-scheme: dark;
 }
 
 body {
   overflow-x: hidden;
-  background: #262624;
+  background: rgb(var(--c-bg));
   letter-spacing: 0.01em;
 }
 
@@ -26,11 +29,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--c-border-light);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgb(var(--c-muted) / 0.6);
 }
 
 .page-enter-active,
