@@ -26,9 +26,16 @@ export function useWorkspace() {
   function closeTab(id: number) {
     const idx = openTabs.value.findIndex(t => t.id === id)
     if (idx === -1) return
+    const tab = openTabs.value[idx]
     openTabs.value.splice(idx, 1)
     if (activeTabId.value === id) {
       activeTabId.value = openTabs.value.length ? openTabs.value[Math.max(0, idx - 1)].id : null
+    }
+    // 탭 닫기 = 세션 종료 (좀비 PTY 방지). 페이지 이탈과 달리 명시적 정리.
+    if (tab?.path) {
+      $fetch('/api/terminal/kill-by-cwd', { method: 'POST', body: { cwd: tab.path } }).catch(() => {})
+      localStorage.removeItem(`cortex-term:${tab.path}:claude`)
+      localStorage.removeItem(`cortex-term:${tab.path}:shell`)
     }
   }
 

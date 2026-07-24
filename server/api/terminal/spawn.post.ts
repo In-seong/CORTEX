@@ -1,7 +1,29 @@
 import * as pty from 'node-pty'
 import { randomUUID } from 'crypto'
 
-const terminals = new Map<string, pty.IPty>()
+// orca terminal-main-owned-state 패턴의 축약판:
+// 서버가 출력 링버퍼(2MB)+단조 seq를 소유하고, 클라이언트는 seq 기준으로 replay/재동기화한다.
+// 페이지 이탈/네트워크 단절에도 PTY는 살아있고, 재접속 시 since=seq로 이어받는다.
+
+export interface TermSession {
+  pty: pty.IPty
+  cwd: string
+  startClaude: boolean
+  seq: number
+  buffer: { seq: number; data: string }[]
+  bufferBytes: number
+  listeners: Set<(seq: number, data: string) => void>
+  exitListeners: Set<(code: number) => void>
+  exited: boolean
+  exitCode: number | null
+  createdAt: number
+}
+
+const MAX_BUFFER_BYTES = 2 * 1024 * 1024
+
+const g = globalThis as any
+if (!g.__cortexTerminals) g.__cortexTerminals = new Map<string, TermSession>()
+const terminals: Map<string, TermSession> = g.__cortexTerminals
 
 export function getTerminal(id: string) {
   return terminals.get(id)
@@ -9,6 +31,17 @@ export function getTerminal(id: string) {
 
 export function getAllTerminals() {
   return terminals
+}
+
+export function killByCwd(cwd: string): number {
+  let killed = 0
+  for (const [id, s] of terminals) {
+    if (s.cwd === cwd && !s.exited) {
+      try { s.pty.kill() } catch {}
+      killed++
+    }
+  }
+  return killed
 }
 
 export default defineEventHandler(async (event) => {
@@ -49,11 +82,44 @@ export default defineEventHandler(async (event) => {
     },
   })
 
-  terminals.set(id, term)
+  const session: TermSession = {
+    pty: term,
+    cwd,
+    startClaude: !!command,
+    seq: 0,
+    buffer: [],
+    bufferBytes: 0,
+    listeners: new Set(),
+    exitListeners: new Set(),
+    exited: false,
+    exitCode: null,
+    createdAt: Date.now(),
+  }
 
-  term.onExit(() => {
-    terminals.delete(id)
+  term.onData((data: string) => {
+    session.seq++
+    session.buffer.push({ seq: session.seq, data })
+    session.bufferBytes += data.length
+    while (session.bufferBytes > MAX_BUFFER_BYTES && session.buffer.length > 1) {
+      const dropped = session.buffer.shift()!
+      session.bufferBytes -= dropped.data.length
+    }
+    for (const fn of session.listeners) {
+      try { fn(session.seq, data) } catch {}
+    }
   })
+
+  term.onExit(({ exitCode }) => {
+    session.exited = true
+    session.exitCode = exitCode
+    for (const fn of session.exitListeners) {
+      try { fn(exitCode) } catch {}
+    }
+    // 재접속으로 마지막 출력을 볼 수 있게 5분 유예 후 제거
+    setTimeout(() => terminals.delete(id), 5 * 60 * 1000)
+  })
+
+  terminals.set(id, session)
 
   return { id, pid: term.pid }
 })
