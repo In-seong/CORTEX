@@ -171,7 +171,7 @@ function formatDate(iso: string) {
 </script>
 
 <template>
-  <div class="rounded-2xl glass-card hud-corners overflow-hidden">
+  <div class="glass-card overflow-hidden">
     <!-- Alert Banner -->
     <div v-if="alertTodos.length" class="px-5 py-2.5 bg-neon-rose/5 border-b border-neon-rose/20">
       <div class="flex items-center gap-2 overflow-x-auto scrollbar-hide">
@@ -282,7 +282,7 @@ function formatDate(iso: string) {
         <button
           @click="addTodo"
           :disabled="!newTitle.trim()"
-          class="px-4 py-1.5 rounded-lg text-xs font-medium bg-gradient-to-r from-neon-indigo to-neon-cyan text-white shadow-neon hover:shadow-neon-lg transition-all disabled:opacity-30"
+          class="px-4 py-1.5 rounded-md text-xs font-medium bg-neon-indigo text-white hover:bg-neon-indigo-deep transition-colors disabled:opacity-30"
         >
           추가
         </button>
@@ -427,7 +427,7 @@ function formatDate(iso: string) {
             <button
               @click="saveEdit"
               :disabled="!editTitle.trim()"
-              class="px-4 py-1.5 rounded-lg text-xs font-medium bg-gradient-to-r from-neon-indigo to-neon-cyan text-white shadow-neon hover:shadow-neon-lg transition-all disabled:opacity-30"
+              class="px-4 py-1.5 rounded-md text-xs font-medium bg-neon-indigo text-white hover:bg-neon-indigo-deep transition-colors disabled:opacity-30"
             >
               저장
             </button>

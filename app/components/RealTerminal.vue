@@ -189,10 +189,10 @@ async function initTerminal() {
     fontFamily: 'JetBrains Mono, Menlo, Monaco, monospace',
     lineHeight: isMobile ? 1.2 : 1.4,
     theme: {
-      background: '#0a0a0f',
+      background: '#0a0a0a',
       foreground: '#e4e4e7',
       cursor: '#818cf8',
-      cursorAccent: '#0a0a0f',
+      cursorAccent: '#0a0a0a',
       selectionBackground: '#818cf840',
       black: '#09090b',
       red: '#fb7185',

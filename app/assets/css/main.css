@@ -7,395 +7,60 @@
     @apply border-brain-border;
   }
   body {
-    background: #08080f;
+    background: #0a0a0a;
   }
 }
 
 /* ============================================
-   JARVIS-STYLE FUTURISTIC UI SYSTEM
+   CORTEX UI — quiet chrome, color for state only
+   surfaces: #0a0a0a canvas · #111113 sidebar · #171717 card
+   accent: indigo #818cf8 (brand) · emerald/amber/rose (state)
    ============================================ */
 
-/* === Animated Grid Background === */
-.bg-grid-pattern {
-  background-image:
-    linear-gradient(rgba(34, 211, 238, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(34, 211, 238, 0.06) 1px, transparent 1px);
-  background-size: 50px 50px;
-  animation: grid-drift 25s linear infinite;
-}
-
-@keyframes grid-drift {
-  0% { background-position: 0 0; }
-  100% { background-position: 50px 50px; }
-}
-
-/* === Glassmorphism === */
+/* === Panels / Cards === */
+/* .glass = 반투명 패널(헤더·모달), .glass-card = 기본 카드. 이름은 기존 호환 유지 */
 .glass {
-  @apply backdrop-blur-xl;
-  background: rgba(10, 10, 20, 0.75);
-  border: 1px solid rgba(34, 211, 238, 0.12);
+  background: rgba(17, 17, 19, 0.92);
+  @apply backdrop-blur-md;
 }
 
 .glass-card {
-  @apply backdrop-blur-md;
-  background: linear-gradient(135deg, rgba(15, 15, 30, 0.8), rgba(20, 20, 40, 0.6));
-  border: 1px solid rgba(34, 211, 238, 0.15);
-  box-shadow:
-    0 0 30px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(34, 211, 238, 0.08),
-    inset 0 0 20px rgba(34, 211, 238, 0.03);
+  background: #171717;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 0.75rem;
 }
 
 .glass-card:hover {
-  border-color: rgba(34, 211, 238, 0.3);
-  box-shadow:
-    0 0 40px rgba(0, 0, 0, 0.5),
-    0 0 30px rgba(34, 211, 238, 0.08),
-    inset 0 1px 0 rgba(34, 211, 238, 0.12),
-    inset 0 0 30px rgba(34, 211, 238, 0.05);
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
-/* === Neon Glow Effects (BRIGHT) === */
-.glow-text {
-  text-shadow:
-    0 0 10px rgba(129, 140, 248, 0.6),
-    0 0 40px rgba(129, 140, 248, 0.3),
-    0 0 80px rgba(129, 140, 248, 0.15);
-}
-
-.glow-text-cyan {
-  text-shadow:
-    0 0 10px rgba(34, 211, 238, 0.6),
-    0 0 40px rgba(34, 211, 238, 0.3),
-    0 0 80px rgba(34, 211, 238, 0.15);
-}
-
-.glow-text-emerald {
-  text-shadow:
-    0 0 10px rgba(52, 211, 153, 0.6),
-    0 0 40px rgba(52, 211, 153, 0.3);
-}
-
-.glow-text-purple {
-  text-shadow:
-    0 0 10px rgba(167, 139, 250, 0.6),
-    0 0 40px rgba(167, 139, 250, 0.3);
-}
-
-.glow-border {
-  box-shadow:
-    0 0 15px rgba(129, 140, 248, 0.3),
-    0 0 30px rgba(129, 140, 248, 0.1),
-    inset 0 0 15px rgba(129, 140, 248, 0.05);
-}
-
-.glow-border-cyan {
-  box-shadow:
-    0 0 15px rgba(34, 211, 238, 0.3),
-    0 0 30px rgba(34, 211, 238, 0.1),
-    inset 0 0 15px rgba(34, 211, 238, 0.05);
-}
-
-/* === ROTATING GRADIENT BORDER (Hero Effect) === */
-.rotating-border {
-  position: relative;
-  border: none !important;
-  overflow: hidden;
-}
-.rotating-border::before {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border-radius: inherit;
-  background: conic-gradient(
-    from var(--border-angle, 0deg),
-    transparent 30%,
-    rgba(34, 211, 238, 0.6) 38%,
-    rgba(129, 140, 248, 0.8) 42%,
-    rgba(34, 211, 238, 0.6) 48%,
-    transparent 55%
-  );
-  animation: rotate-border 4s linear infinite;
-  z-index: -1;
-}
-.rotating-border::after {
-  content: '';
-  position: absolute;
-  inset: 1px;
-  border-radius: inherit;
-  background: linear-gradient(135deg, rgba(12, 12, 22, 0.95), rgba(18, 18, 32, 0.95));
-  z-index: -1;
-}
-@keyframes rotate-border {
-  0% { --border-angle: 0deg; }
-  100% { --border-angle: 360deg; }
-}
-@property --border-angle {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
-}
-
-/* === HUD Corner Brackets (VISIBLE) === */
-.hud-corners {
-  position: relative;
-}
-.hud-corners::before,
-.hud-corners::after {
-  content: '';
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  border-color: rgba(34, 211, 238, 0.7);
-  border-style: solid;
-  pointer-events: none;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  filter: drop-shadow(0 0 4px rgba(34, 211, 238, 0.4));
-}
-.hud-corners::before {
-  top: -1px;
-  left: -1px;
-  border-width: 2px 0 0 2px;
-}
-.hud-corners::after {
-  bottom: -1px;
-  right: -1px;
-  border-width: 0 2px 2px 0;
-}
-.hud-corners:hover::before,
-.hud-corners:hover::after {
-  width: 28px;
-  height: 28px;
-  border-color: rgba(34, 211, 238, 1);
-  filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.7));
-}
-
-/* === Scanning Line (VISIBLE) === */
-.scan-line {
-  position: relative;
-  overflow: hidden;
-}
-.scan-line::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.8), rgba(129, 140, 248, 0.8), transparent);
-  box-shadow: 0 0 15px rgba(34, 211, 238, 0.5), 0 0 30px rgba(34, 211, 238, 0.2);
-  animation: scan 3s ease-in-out infinite;
-}
-@keyframes scan {
-  0% { left: -100%; opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { left: 100%; opacity: 0; }
-}
-
-/* === Holographic Shimmer === */
-.holo-shimmer {
-  position: relative;
-  overflow: hidden;
-}
-.holo-shimmer::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    105deg,
-    transparent 40%,
-    rgba(34, 211, 238, 0.06) 45%,
-    rgba(129, 140, 248, 0.08) 50%,
-    rgba(34, 211, 238, 0.06) 55%,
-    transparent 60%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 3s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 1;
-}
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-/* === Pulsing Status Dot === */
-.status-dot {
-  position: relative;
-}
-.status-dot::after {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  border-radius: 50%;
-  background: inherit;
-  animation: status-pulse 2s ease-in-out infinite;
-  opacity: 0;
-}
-@keyframes status-pulse {
-  0%, 100% { transform: scale(1); opacity: 0; }
-  50% { transform: scale(2.5); opacity: 0.4; }
-}
-
-/* === Ambient Background Glow (VISIBLE) === */
-.ambient-glow {
-  position: fixed;
-  width: 800px;
-  height: 800px;
-  border-radius: 50%;
-  filter: blur(150px);
-  opacity: 0.12;
-  pointer-events: none;
-  z-index: 0;
-  animation: ambient-drift 20s ease-in-out infinite;
-}
-@keyframes ambient-drift {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  25% { transform: translate(80px, -50px) scale(1.1); }
-  50% { transform: translate(-40px, 60px) scale(0.9); }
-  75% { transform: translate(60px, 40px) scale(1.05); }
-}
-
-/* === Particle Dots Background === */
-.particle-field {
-  position: fixed;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 0;
-}
-.particle {
-  position: absolute;
-  width: 2px;
-  height: 2px;
-  background: rgba(34, 211, 238, 0.5);
-  border-radius: 50%;
-  box-shadow: 0 0 6px rgba(34, 211, 238, 0.3);
-  animation: particle-float linear infinite;
-}
-.particle:nth-child(odd) {
-  background: rgba(129, 140, 248, 0.5);
-  box-shadow: 0 0 6px rgba(129, 140, 248, 0.3);
-}
-@keyframes particle-float {
-  0% { transform: translateY(100vh) scale(0); opacity: 0; }
-  10% { opacity: 1; scale: 1; }
-  90% { opacity: 1; }
-  100% { transform: translateY(-10vh) scale(0); opacity: 0; }
-}
-
-/* === Data Stream Line === */
-.data-stream {
-  position: absolute;
-  width: 1px;
-  height: 100%;
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    rgba(34, 211, 238, 0.15) 20%,
-    rgba(34, 211, 238, 0.3) 50%,
-    rgba(34, 211, 238, 0.15) 80%,
-    transparent
-  );
-  animation: data-flow 8s linear infinite;
-  pointer-events: none;
-}
-@keyframes data-flow {
-  0% { opacity: 0; transform: translateY(-100%); }
-  30% { opacity: 1; }
-  70% { opacity: 1; }
-  100% { opacity: 0; transform: translateY(100%); }
-}
-
-/* === Hexagon Background Pattern === */
-.hex-pattern {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath d='M28 66L0 50L0 16L28 0L56 16L56 50L28 66L28 100' fill='none' stroke='rgba(34,211,238,0.04)' stroke-width='0.5'/%3E%3C/svg%3E");
-}
-
-/* === Neon Underline === */
-.neon-underline {
-  position: relative;
-}
-.neon-underline::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, #818cf8, #22d3ee, #818cf8);
-  border-radius: 1px;
-  box-shadow: 0 0 10px rgba(34, 211, 238, 0.6), 0 0 20px rgba(129, 140, 248, 0.3);
-}
-
-/* === Data Stream Text === */
+/* === Monospace metadata text === */
 .data-text {
   font-family: 'JetBrains Mono', monospace;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
 }
 
-/* === Animations === */
-.animate-glow-pulse {
-  animation: glow-pulse 3s ease-in-out infinite;
+/* === Sleek scrollbar (sidebar/lists) === */
+.scrollbar-sleek::-webkit-scrollbar {
+  width: 4px;
 }
-@keyframes glow-pulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 1; }
+.scrollbar-sleek::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
 }
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-12px); }
+.scrollbar-sleek::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.18);
 }
 
-@keyframes slide-up {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
-.animate-slide-up {
-  animation: slide-up 0.5s ease-out;
-}
-
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-.animate-fade-in {
-  animation: fade-in 0.3s ease-out;
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-@keyframes gradient-shift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-@keyframes pulse-ring {
-  0% { transform: scale(0.8); opacity: 1; }
-  100% { transform: scale(2.5); opacity: 0; }
-}
-
-/* === Gradient Border Effect === */
-.gradient-border {
-  position: relative;
-  background: rgba(22, 22, 38, 0.5);
-  border: 1px solid transparent;
-  background-clip: padding-box;
-}
-.gradient-border::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  background: linear-gradient(135deg, rgba(129, 140, 248, 0.3), transparent 40%, transparent 60%, rgba(34, 211, 238, 0.3));
-  z-index: -1;
-  pointer-events: none;
-}
-
-/* === Vue Flow === */
+/* === Vue Flow (관계 그래프) === */
 .vue-flow__node {
   background: transparent !important;
   border: none !important;
@@ -419,11 +84,12 @@
 }
 
 .vue-flow__minimap {
-  background: #1a1a26 !important;
-  border: 1px solid #2e2e45 !important;
+  background: #171717 !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
   border-radius: 12px !important;
 }
 
+/* === Electron drag region (웹에선 무해) === */
 .app-drag {
   -webkit-app-region: drag;
 }
