@@ -13,7 +13,7 @@ const openTabs = ref<WorkspaceTab[]>([])
 const activeTabId = ref<number | string | null>(null)
 
 export function useWorkspace() {
-  function openProject(project: any, mode: 'claude' | 'shell' | 'quick' | 'review' | 'chat' = 'claude') {
+  function openProject(project: any, mode: 'claude' | 'shell' | 'quick' | 'review' | 'chat' = 'chat') {
     const existing = openTabs.value.find(t => t.id === project.id)
     if (existing) {
       activeTabId.value = existing.id

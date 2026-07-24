@@ -8,7 +8,7 @@ const router = useRouter()
 const { openProject } = useWorkspace()
 
 function openClaude(project: any) {
-  openProject(project, 'claude')
+  openProject(project, 'chat')
   router.push('/workspace')
 }
 

@@ -5,6 +5,7 @@
 
 const props = defineProps<{
   projectPath: string
+  initialCommand?: string // 세션이 없을 때 스폰할 명령 (기본: claude -c)
 }>()
 
 const emit = defineEmits<{ sent: [] }>()
@@ -50,7 +51,7 @@ async function ensureSession(): Promise<string | null> {
   try {
     const { id } = await $fetch('/api/terminal/spawn', {
       method: 'POST',
-      body: { cwd: props.projectPath, command: '/Users/scoop/.local/bin/claude -c' },
+      body: { cwd: props.projectPath, command: props.initialCommand || '/Users/scoop/.local/bin/claude -c' },
     }) as any
     localStorage.setItem(storageKey.value, id)
     showHint('새 Claude 세션을 시작했습니다 — 잠시 후 전송됩니다')

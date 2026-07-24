@@ -136,7 +136,7 @@ function openWorktreeTab(wt: { path: string; branch: string }, command?: string)
     category: 'worktree',
     has_claude_md: project.value.has_claude_md,
     command,
-  }, 'claude')
+  }, 'chat')
 }
 
 async function createWorktrees() {

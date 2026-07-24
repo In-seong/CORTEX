@@ -5,7 +5,11 @@
 const props = defineProps<{
   projectPath: string
   projectName: string
+  initialCommand?: string // 워크트리 fan-out 등: 세션 스폰 시 실행할 명령
 }>()
+
+// 터미널 뷰 토글 — 권한 응답·TUI 조작이 필요할 때만 펼침
+const showTerminal = ref(false)
 
 const messages = ref<any[]>([])
 const scrollRef = ref<HTMLElement>()
@@ -40,9 +44,29 @@ function onScroll() {
   autoScroll.value = el.scrollHeight - el.scrollTop - el.clientHeight < 80
 }
 
-onMounted(() => {
+onMounted(async () => {
   poll()
   timer = setInterval(poll, 3000)
+
+  // fan-out 등 시작 명령이 있으면 세션을 즉시 스폰 (첫 전송을 기다리지 않음)
+  if (props.initialCommand) {
+    const key = `cortex-term:${props.projectPath}:claude`
+    const saved = localStorage.getItem(key)
+    if (saved) {
+      try {
+        const ping = await $fetch(`/api/terminal/${saved}`, { method: 'POST', body: { type: 'ping' } }) as any
+        if (ping.alive) return
+      } catch {}
+      localStorage.removeItem(key)
+    }
+    try {
+      const { id } = await $fetch('/api/terminal/spawn', {
+        method: 'POST',
+        body: { cwd: props.projectPath, command: props.initialCommand },
+      }) as any
+      localStorage.setItem(key, id)
+    } catch {}
+  }
 })
 onBeforeUnmount(() => {
   if (timer) clearInterval(timer)
@@ -71,15 +95,33 @@ const toolIcons: Record<string, string> = {
         <span class="text-sm font-medium">💬 채팅</span>
         <span class="text-[11px] text-brain-muted font-mono truncate">{{ projectName }}</span>
       </div>
-      <button
-        v-if="!autoScroll"
-        @click="autoScroll = true; scrollToBottom()"
-        class="text-[11px] text-neon-indigo hover:underline"
-      >↓ 최신으로</button>
+      <div class="flex items-center gap-2">
+        <button
+          v-if="!autoScroll && !showTerminal"
+          @click="autoScroll = true; scrollToBottom()"
+          class="text-[11px] text-neon-indigo hover:underline"
+        >↓ 최신으로</button>
+        <button
+          @click="showTerminal = !showTerminal"
+          class="px-2 py-1 rounded-md text-[11px] border transition-colors"
+          :class="showTerminal ? 'bg-neon-cyan/15 text-neon-cyan border-neon-cyan/30' : 'border-brain-border text-brain-muted hover:text-brain-text'"
+          title="권한 응답 등 TUI 직접 조작이 필요할 때"
+        >🖥 터미널 {{ showTerminal ? '접기' : '보기' }}</button>
+      </div>
+    </div>
+
+    <!-- Terminal view (같은 세션의 raw TUI) -->
+    <div v-if="showTerminal" class="flex-1 overflow-y-auto scrollbar-sleek p-2">
+      <RealTerminal
+        :project-path="projectPath"
+        :project-name="projectName"
+        :start-claude="true"
+        :initial-command="initialCommand"
+      />
     </div>
 
     <!-- Messages -->
-    <div ref="scrollRef" class="flex-1 overflow-y-auto scrollbar-sleek p-4 space-y-3" @scroll="onScroll">
+    <div v-show="!showTerminal" ref="scrollRef" class="flex-1 overflow-y-auto scrollbar-sleek p-4 space-y-3" @scroll="onScroll">
       <div v-if="!messages.length" class="flex flex-col items-center justify-center h-full text-brain-muted">
         <div class="text-3xl mb-2 opacity-30">💬</div>
         <p class="text-sm">아래에 입력하면 Claude Code 세션과 대화합니다</p>
@@ -119,6 +161,6 @@ const toolIcons: Record<string, string> = {
     </div>
 
     <!-- Composer -->
-    <ClaudeComposer :project-path="projectPath" @sent="autoScroll = true" />
+    <ClaudeComposer :project-path="projectPath" :initial-command="initialCommand" @sent="autoScroll = true" />
   </div>
 </template>

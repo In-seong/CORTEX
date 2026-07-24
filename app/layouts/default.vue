@@ -151,7 +151,7 @@ const sidebarProjects = computed(() => {
 })
 
 function openInWorkspace(project: any) {
-  openProject(project, 'claude')
+  openProject(project, 'chat')
   showMobileNav.value = false
   router.push('/workspace')
 }

@@ -132,30 +132,16 @@ function toggleSplit() {
         <button
           @click="setTabMode(tab.id, 'chat')"
           class="px-3 py-1.5 rounded-md text-xs sm:text-[13px] border transition-colors whitespace-nowrap"
-          :class="tab.mode === 'chat' ? 'bg-neon-indigo/15 text-neon-indigo border-neon-indigo/30' : 'border-brain-border text-brain-muted hover:text-brain-text'"
+          :class="tab.mode !== 'shell' && tab.mode !== 'review' ? 'bg-neon-indigo/15 text-neon-indigo border-neon-indigo/30' : 'border-brain-border text-brain-muted hover:text-brain-text'"
         >
-          💬 채팅
-        </button>
-        <button
-          @click="setTabMode(tab.id, 'claude')"
-          class="px-3 py-1.5 rounded-md text-xs sm:text-[13px] border transition-colors whitespace-nowrap"
-          :class="tab.mode === 'claude' ? 'bg-neon-indigo/15 text-neon-indigo border-neon-indigo/30' : 'border-brain-border text-brain-muted hover:text-brain-text'"
-        >
-          🤖 터미널(Claude)
+          💬 Claude
         </button>
         <button
           @click="setTabMode(tab.id, 'shell')"
           class="px-3 py-1.5 rounded-md text-xs sm:text-[13px] border transition-colors whitespace-nowrap"
           :class="tab.mode === 'shell' ? 'bg-neon-cyan/15 text-neon-cyan border-neon-cyan/30' : 'border-brain-border text-brain-muted hover:text-brain-text'"
         >
-          💻 터미널
-        </button>
-        <button
-          @click="setTabMode(tab.id, 'quick')"
-          class="px-3 py-1.5 rounded-md text-xs sm:text-[13px] border transition-colors whitespace-nowrap"
-          :class="tab.mode === 'quick' ? 'bg-neon-emerald/15 text-neon-emerald border-neon-emerald/30' : 'border-brain-border text-brain-muted hover:text-brain-text'"
-        >
-          ⚡ 빠른질문
+          💻 셸
         </button>
         <button
           @click="setTabMode(tab.id, 'review')"
@@ -166,22 +152,14 @@ function toggleSplit() {
         </button>
       </div>
 
-      <!-- Real Terminal (Claude or Shell) - stays alive -->
+      <!-- Shell (일반 터미널 / 빌드 탭) -->
       <RealTerminal
-        v-if="tab.mode === 'claude' || tab.mode === 'shell'"
-        :key="`${tab.id}-${tab.mode}`"
+        v-if="tab.mode === 'shell'"
+        :key="`${tab.id}-shell`"
         :project-path="tab.path"
         :project-name="tab.name"
-        :start-claude="tab.mode === 'claude'"
+        :start-claude="false"
         :initial-command="tab.command"
-      />
-
-      <!-- Native Chat -->
-      <ChatView
-        v-else-if="tab.mode === 'chat'"
-        :key="`chat-${tab.id}`"
-        :project-path="tab.path"
-        :project-name="tab.name"
       />
 
       <!-- Source Control / Review -->
@@ -192,12 +170,13 @@ function toggleSplit() {
         :project-name="tab.name"
       />
 
-      <!-- Quick Prompt -->
-      <ClaudePrompt
+      <!-- Claude (채팅 기본 + 터미널 토글 내장) — 구 claude/quick 모드도 여기로 -->
+      <ChatView
         v-else
-        :key="`quick-${tab.id}`"
+        :key="`chat-${tab.id}`"
         :project-path="tab.path"
         :project-name="tab.name"
+        :initial-command="tab.command"
       />
     </div>
     </div>
