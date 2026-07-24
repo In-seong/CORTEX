@@ -31,12 +31,24 @@ Mac localhost:7777
 - `~/Library/LaunchAgents/com.scoop.brain.plist` — Nuxt 서버 (RunAtLoad + KeepAlive)
 - `~/Library/LaunchAgents/com.scoop.cortex-tunnel.plist` — SSH 터널 (sshpass + KeepAlive)
 
+## 에이전트 상태 시스템 (orca 방식)
+Claude Code hooks가 모든 세션의 상태를 CORTEX로 전송한다:
+```
+~/.claude/settings.json (hooks 6종) → ~/.claude/cortex-hook.sh
+  → POST 127.0.0.1:7777/api/agent-hook → agent_status 테이블
+  → GET /api/agents (사이드바 5초 폴링) → 상태 dot + unread
+```
+- 상태 모델: `working | permission | waiting | done | idle` (터미널 파싱 아님, hook 명시 이벤트만)
+- 이벤트 매핑: UserPromptSubmit→working / PreToolUse→working+툴표시 / Notification→permission·waiting / Stop→done+unread(transcript tail에서 마지막 응답 추출) / SessionEnd→행 삭제
+- 훅 설치 변경 시 `~/.claude/settings.json.bak-cortex` 백업 참고. 훅은 서버가 죽어도 Claude를 막지 않음(curl --max-time 2, exit 0)
+
 ## 디렉토리 구조
 ```
 scoop-brain/
 ├── app/
-│   ├── app.vue                          # 루트
-│   ├── assets/css/main.css              # 글로벌 CSS
+│   ├── app.vue                          # 루트 (NuxtLayout)
+│   ├── layouts/default.vue              # 앱셸: 좌측 사이드바(네비+에이전트+프로젝트) + 모바일 드로어
+│   ├── assets/css/main.css              # 글로벌 CSS (뉴트럴 다크, glass-card)
 │   ├── components/
 │   │   ├── ClaudePrompt.vue             # Claude 프롬프트 입력
 │   │   ├── DashboardProjectCard.vue     # 대시보드 프로젝트 카드
@@ -56,6 +68,8 @@ scoop-brain/
 │   │   ├── index.ts                     # SQLite 연결
 │   │   └── schema.ts                    # 테이블 스키마
 │   ├── api/
+│   │   ├── agent-hook.post.ts           # Claude Code hook 수신 (에이전트 상태)
+│   │   ├── agents/                      # 상태 목록 + unread ack
 │   │   ├── projects/                    # 프로젝트 CRUD + 스캔 + 관계
 │   │   ├── terminal/                    # PTY spawn/input/output + 이미지 업로드
 │   │   ├── claude/                      # Claude 세션/프롬프트

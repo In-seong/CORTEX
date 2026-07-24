@@ -89,6 +89,24 @@ CREATE TABLE IF NOT EXISTS ide_configs (
   FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS agent_status (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id TEXT UNIQUE NOT NULL,
+  cwd TEXT NOT NULL,
+  project_id INTEGER,
+  state TEXT NOT NULL DEFAULT 'idle',
+  last_event TEXT DEFAULT '',
+  tool_name TEXT DEFAULT '',
+  tool_input TEXT DEFAULT '',
+  last_prompt TEXT DEFAULT '',
+  last_message TEXT DEFAULT '',
+  transcript_path TEXT DEFAULT '',
+  unread INTEGER DEFAULT 0,
+  started_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL
+);
+
 CREATE TABLE IF NOT EXISTS quick_actions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   project_id INTEGER NOT NULL,

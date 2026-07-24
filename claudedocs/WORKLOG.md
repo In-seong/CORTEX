@@ -1,10 +1,37 @@
 # CORTEX WORKLOG
 
 ## 📌 현재 진행 중 / 다음 할 일
-- **UI 개편 방향 확정 중**: 커스텀 JARVIS 네온 → "익숙한 UI"(GPT/Claude/orca식 좌측 사이드바 + 우측 메인) 전환 검토. 디자인 분석 진행 중
-- **orca 흡수 로드맵** (분석 완료, 착수 대기): Phase 1 에이전트 상태 시스템(hook→POST /api/agent-hook, 4-state, unread) → 2 터미널 생존성(WS+링버퍼+seq replay) → 3 사용량 추적(.jsonl 스캔) → 4 알림/모바일(WS seq catch-up) → 5 병렬 worktree → 6 diff리뷰/자동화
-- **미해결**: CORTEX.app(Electron)이 `::1:7777` 점유 → localhost 500 유발. 앱 종료/포트 분리/Electron 폐기 중 결정 필요
-- 앞으로 작업은 feature 브랜치로 (git 사용 시작됨)
+- **Phase 1 완료** → 다음: Phase 2 터미널 생존성(WS+서버측 링버퍼+seq replay) → 3 사용량 추적(.jsonl 스캔) → 4 알림/모바일(WS seq catch-up, PWA 푸시) → 5 병렬 worktree → 6 diff리뷰/자동화
+- Electron 폐지 확정(웹 단일화). electron/ 디렉토리·package.json 빌드 설정 추후 정리
+
+---
+
+## 2026-07-24 (3) — Phase 1: 에이전트 상태 시스템 완성
+**한 일**
+- Claude Code hooks(6종: SessionStart/UserPromptSubmit/PreToolUse/Notification/Stop/SessionEnd) → `~/.claude/cortex-hook.sh`(curl, --max-time 2, 항상 exit 0) → `POST /api/agent-hook` → `agent_status` 테이블
+- 상태 모델(orca): working/permission/waiting/done/idle + unread. Stop 시 transcript .jsonl tail(256KB)에서 마지막 assistant 응답 추출
+- `GET /api/agents`(12h 만료 정리, stale=30분 무소식 working), `POST /api/agents/ack`
+- 사이드바(데스크탑+모바일 드로어)에 "에이전트" 섹션 + 프로젝트 행 상태 dot. 5초 폴링. 클릭 시 ack+워크스페이스 열기
+- ~/.claude/settings.json에 훅 병합(기존 load_worklog.sh 보존, 백업 .bak-cortex)
+**검증**: 합성 이벤트 5종 + 실전(이 세션 자체 + mobil_celltrion_web 실세션이 실시간으로 잡힘)
+**함정/맥락**
+- cwd→프로젝트 귀속은 경로 prefix 매칭. scoop-brain 자체는 스캐너 제외라 project_id null → cwd basename으로 표시
+- 훅 엔드포인트는 nginx 터널로 외부 노출됨(다른 API와 동일 수준) — 추후 인증 레이어 고려
+**상태**: 완료 (main 머지)
+
+---
+
+## 2026-07-24 (2) — UI 개편: 사이드바 셸 + 뉴트럴 다크 (main 머지됨)
+**한 일**
+- GPT/Claude/orca식 좌측 사이드바 셸로 전면 개편. `app/layouts/default.vue` 신설(네비+프로젝트 목록+검색+스캔+모바일 드로어), 4페이지 중복 헤더 제거
+- 컬러 토큰 교체(orca 원칙 "quiet chrome, 색은 상태만"): `#0a0a0a`/`#171717`/백색7% 보더, 인디고=브랜드 액센트, emerald/amber/rose=상태 전용
+- JARVIS 장식(파티클·그리드·스캔라인·쉬머·HUD·글로우) 전부 삭제, 그라데이션 버튼→솔리드 인디고. 순감 −608줄
+- **버그 수정**: `app/public/`이 서빙 안 되던 문제(Nuxt는 루트 `public/` 사용) → 이동. manifest.json이 HTML 폴백으로 응답되던 것 해결(PWA 선행조건). CORTEX.app(::1:7777 점유→500 유발) 종료+삭제
+**결정/맥락**
+- 페이지 라우팅 유지(orca식 activeView SPA 전환 대신) — Nuxt 라우터가 이미 그 역할
+- .glass/.glass-card 클래스명은 유지하고 정의만 교체(수정 범위 최소화)
+- 검증: chrome-devtools 스크린샷(1440px/390px) + 콘솔 확인
+**커밋**: main `0728670` (feature/ui-shell 머지, +811/−1419)
 
 ---
 
