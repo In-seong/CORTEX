@@ -1,7 +1,8 @@
 <script setup lang="ts">
 const route = useRoute()
 const { data: detail, refresh } = await useFetch(`/api/projects/${route.params.id}`)
-const { data: allProjects } = await useFetch('/api/projects')
+// 관계 대상은 후보(미등록)까지 전체에서 고른다 — 연결 시 자동 등록됨
+const { data: allProjects } = await useFetch('/api/projects', { query: { all: 'true' } })
 
 const project = computed(() => detail.value?.project as any)
 
@@ -83,6 +84,11 @@ async function addRelation(targetId: number) {
   const label = relationLabel.value.trim()
   // child = source가 모체. '상위로 연결'이면 방향을 뒤집는다.
   const isParent = relationDirection.value === 'parent'
+  // 관계 맺는 양쪽 다 등록(활성화) — 후보에서 바로 끌어와도 사이드바에 뜨도록
+  await $fetch('/api/projects/activate', {
+    method: 'POST',
+    body: { ids: [project.value.id, targetId] },
+  }).catch(() => {})
   await $fetch('/api/projects/relations', {
     method: 'POST',
     body: {

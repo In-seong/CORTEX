@@ -108,6 +108,11 @@ function toggleSplit() {
           <p v-if="!splitMode" class="text-xs text-brain-muted font-mono mt-0.5 truncate">{{ tab.path }}</p>
         </div>
         <div v-if="!splitMode" class="flex items-center gap-2 overflow-x-auto shrink-0">
+          <NuxtLink
+            v-if="typeof tab.id === 'number'"
+            :to="`/projects/${tab.id}`"
+            class="px-2.5 py-1.5 rounded-md text-xs bg-brain-card border border-brain-border hover:border-brain-border-light transition-colors whitespace-nowrap"
+          >🔗 관계·디바이스</NuxtLink>
           <button
             @click="launchIde('vscode', tab.path)"
             class="px-2.5 py-1.5 rounded-md text-xs bg-brain-card border border-brain-border hover:border-brain-border-light transition-colors whitespace-nowrap"
