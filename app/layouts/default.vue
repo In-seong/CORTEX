@@ -163,9 +163,43 @@ async function scanProjects() {
   scanning.value = true
   try {
     await $fetch('/api/projects/scan', { method: 'POST' })
-    await refreshProjects()
+    await refreshCandidates()
   } finally {
     scanning.value = false
+  }
+}
+
+// ===== 프로젝트 추가 (후보에서 골라 등록) =====
+const showAddProject = ref(false)
+const candidateSearch = ref('')
+const candidates = ref<any[]>([])
+const adding = ref<number | null>(null)
+
+async function refreshCandidates() {
+  try {
+    candidates.value = await $fetch('/api/projects/candidates', {
+      query: candidateSearch.value ? { q: candidateSearch.value } : {},
+    }) as any[]
+  } catch {}
+}
+
+function openAddProject() {
+  showAddProject.value = true
+  showMobileNav.value = false
+  candidateSearch.value = ''
+  refreshCandidates()
+}
+
+watch(candidateSearch, () => { if (showAddProject.value) refreshCandidates() })
+
+async function addProject(c: any) {
+  adding.value = c.id
+  try {
+    await $fetch('/api/projects/activate', { method: 'POST', body: { id: c.id } })
+    await refreshProjects()
+    candidates.value = candidates.value.filter(x => x.id !== c.id)
+  } finally {
+    adding.value = null
   }
 }
 
@@ -256,12 +290,10 @@ watch(() => route.path, () => { showMobileNav.value = false })
         <div class="flex items-center justify-between px-4 pt-3 pb-1.5 shrink-0">
           <span class="text-[11px] font-semibold uppercase tracking-[0.08em] text-brain-muted">프로젝트</span>
           <button
-            @click="scanProjects"
-            :disabled="scanning"
-            class="w-6 h-6 rounded flex items-center justify-center text-xs text-brain-muted hover:text-brain-text hover:bg-brain-border transition-colors disabled:opacity-50"
-            :class="scanning ? 'animate-spin' : ''"
-            title="프로젝트 스캔"
-          >⟳</button>
+            @click="openAddProject"
+            class="w-6 h-6 rounded flex items-center justify-center text-sm text-brain-muted hover:text-brain-text hover:bg-brain-border transition-colors"
+            title="프로젝트 추가"
+          >+</button>
         </div>
         <div class="px-3 pb-2 shrink-0">
           <input
@@ -296,9 +328,10 @@ watch(() => route.path, () => { showMobileNav.value = false })
             </span>
             <span v-else-if="p.has_claude_md && !agentByProject.get(p.id)" class="text-[10px] opacity-40 shrink-0">🤖</span>
           </button>
-          <p v-if="!sidebarProjects.length" class="px-2 py-4 text-xs text-brain-muted text-center">
-            {{ sidebarSearch ? '검색 결과 없음' : '프로젝트 없음' }}
-          </p>
+          <div v-if="!sidebarProjects.length" class="px-2 py-4 text-center">
+            <p class="text-xs text-brain-muted">{{ sidebarSearch ? '검색 결과 없음' : '등록된 프로젝트 없음' }}</p>
+            <button v-if="!sidebarSearch" @click="openAddProject" class="mt-2 text-xs text-neon-indigo hover:underline">+ 프로젝트 추가</button>
+          </div>
         </div>
       </div>
     </aside>
@@ -365,6 +398,58 @@ watch(() => route.path, () => { showMobileNav.value = false })
               <p class="text-[10px] text-brain-muted/60 font-mono mt-0.5">{{ n.created_at }}</p>
             </button>
             <p v-if="!notifications.length" class="px-3 py-6 text-center text-xs text-brain-muted">알림이 없습니다</p>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Add Project Modal -->
+    <Teleport to="body">
+      <div v-if="showAddProject" class="fixed inset-0 z-[70] flex items-end sm:items-start justify-center sm:pt-[12vh]" @click.self="showAddProject = false">
+        <div class="absolute inset-0 bg-black/50" @click="showAddProject = false" />
+        <div class="relative w-full sm:w-[560px] max-h-[80vh] sm:max-h-[64vh] bg-brain-card border border-brain-border-light rounded-t-xl sm:rounded-xl shadow-floating overflow-hidden animate-slide-up flex flex-col">
+          <div class="p-3 border-b border-brain-border shrink-0">
+            <div class="flex items-center justify-between mb-2.5">
+              <h3 class="text-sm font-semibold">프로젝트 추가</h3>
+              <button
+                @click="scanProjects"
+                :disabled="scanning"
+                class="text-[11px] text-neon-indigo hover:underline disabled:opacity-50"
+              >{{ scanning ? '스캔 중...' : '⟳ 새로 찾기(전체 스캔)' }}</button>
+            </div>
+            <div class="relative">
+              <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brain-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              <input
+                v-model="candidateSearch"
+                type="text"
+                placeholder="이름·경로·카테고리 검색..."
+                class="w-full bg-brain-bg border border-brain-border rounded-md pl-10 pr-4 py-2 text-sm placeholder:text-brain-muted/60 focus:outline-none focus:border-neon-indigo/50 transition-colors"
+                autofocus
+              />
+            </div>
+          </div>
+          <div class="overflow-y-auto scrollbar-sleek flex-1">
+            <button
+              v-for="c in candidates"
+              :key="c.id"
+              @click="addProject(c)"
+              :disabled="adding === c.id"
+              class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-brain-border transition-colors border-b border-brain-border/50 text-left"
+            >
+              <span class="text-base shrink-0">{{ c.icon || '📁' }}</span>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate">{{ c.name }}</p>
+                <p class="text-[11px] text-brain-muted font-mono truncate">{{ c.path.replace('/Users/scoop/', '~/') }}</p>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <span v-if="c.has_claude_md" class="text-[10px] opacity-50">🤖</span>
+                <span v-if="c.session_count > 0" class="text-[10px] text-brain-muted">💬{{ c.session_count }}</span>
+                <span class="text-xs text-neon-indigo">{{ adding === c.id ? '...' : '+ 추가' }}</span>
+              </div>
+            </button>
+            <p v-if="!candidates.length" class="px-4 py-8 text-center text-xs text-brain-muted">
+              {{ candidateSearch ? '검색 결과 없음' : '추가할 후보가 없습니다 — "새로 찾기"로 스캔하세요' }}
+            </p>
           </div>
         </div>
       </div>

@@ -120,6 +120,12 @@ curl -s -o /dev/null -w "%{http_code}" http://localhost:7777/
 - **worktree**: `~/.cortex-worktrees/<repo>/<branch>`에 격리. 삭제 시 미머지 브랜치는 -d로만(보존). count 2-4 = fan-out
 - **자동화**: `claude -p`를 프로젝트 cwd에서 실행(20분 상한, 동시 1개). 완료/실패 시 알림 생성
 
+## 프로젝트 큐레이션 (is_active)
+- 홈 전체 자동 노출 X. `is_active=1`인 **등록된 프로젝트만** 사이드바/대시보드/통계에 표시
+- `scan`은 후보 발견용(신규는 is_active=0으로 insert, 기존 활성 상태 보존)
+- 사이드바 "+" / 설정 페이지에서 후보(`/api/projects/candidates`)를 골라 `/api/projects/activate`로 등록/해제
+- 관계(project_relations)는 등록 여부와 무관하게 전체 대상. 최초 마이그레이션은 관계 있는 프로젝트만 자동 등록
+
 ## 주의사항
 - `NITRO_HOST`는 반드시 `127.0.0.1` (localhost 쓰면 IPv6 충돌로 EADDRINUSE)
 - 빌드 후 반드시 `launchctl kickstart -k`로 재시작

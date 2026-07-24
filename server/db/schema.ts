@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS projects (
   git_branch TEXT DEFAULT '',
   git_dirty_count INTEGER DEFAULT 0,
   is_hidden INTEGER DEFAULT 0,
+  is_active INTEGER DEFAULT 0,
   last_active_at TEXT,
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now'))
