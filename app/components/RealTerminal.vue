@@ -99,7 +99,12 @@ let fitAddon: FitAddon | null = null
 let reader: ReadableStreamDefaultReader | null = null
 
 // 세션 생존성: 터미널 id를 localStorage에 저장해 페이지 이탈/새로고침 후 재부착
-const storageKey = computed(() => `cortex-term:${props.projectPath}:${props.startClaude ? 'claude' : 'shell'}`)
+// 커스텀 명령(빌드 탭 등)은 같은 경로의 일반 셸과 세션이 섞이지 않게 키를 분리
+const storageKey = computed(() => {
+  const mode = props.startClaude ? 'claude' : 'shell'
+  const cmdSuffix = props.initialCommand ? `:cmd${props.initialCommand.length}` : ''
+  return `cortex-term:${props.projectPath}:${mode}${cmdSuffix}`
+})
 let lastSeq = 0
 let intentionalClose = false
 
@@ -438,6 +443,9 @@ onBeforeUnmount(() => {
     >
       <div class="w-12 sm:w-10 h-1 sm:h-0.5 rounded-full bg-brain-muted/30 group-hover:bg-neon-cyan/60 transition-colors" />
     </div>
+
+    <!-- 채팅 컴포저 (Claude 모드) — 터미널 직접 타이핑 대신 편하게 입력 -->
+    <ClaudeComposer v-if="startClaude" :project-path="projectPath" />
 
     <!-- Image toast -->
     <Transition name="toast">

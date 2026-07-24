@@ -1,9 +1,22 @@
 # CORTEX WORKLOG
 
 ## 📌 현재 진행 중 / 다음 할 일
-- **orca 로드맵 Phase 1~6 전부 완료** (main 머지). 사용자 수동 테스트 대기 — 시나리오: `claudedocs/TEST_SCENARIOS.md`
-- 남은 개선 후보: 서버 재시작 시 PTY 소멸(데몬 분리 필요시), Web Push(PWA 백그라운드), Cmd+K 팔레트, agent-hook 외부 노출 인증, electron/ 잔재 정리
-- 주의: 훅/자동화가 실행하는 claude는 `/Users/scoop/.local/bin/claude` 고정 경로
+- **Phase 1~6 + 네이티브 채팅/분할/디바이스/그래프 계층까지 완료** (main). 사용자 수동 테스트 대기 — `claudedocs/TEST_SCENARIOS.md` (A~L)
+- 남은 개선 후보: 서버 재시작 시 PTY 소멸(데몬), Web Push, Cmd+K 팔레트, agent-hook 인증, electron/ 잔재 정리, 채팅 뷰 마크다운 렌더링
+- 주의: claude 경로 `/Users/scoop/.local/bin/claude` 고정
+
+---
+
+## 2026-07-24 (5) — 네이티브 채팅 + 화면 분할 + 디바이스 빌드 + 그래프 계층
+**네이티브 채팅 (orca native-chat 이식)**
+- `ClaudeComposer.vue`: 일반 textarea(한글 IME 안전) → **bracketed paste**(\x1b[200~...\x1b[201~) + 300ms 지연 \r로 PTY 주입. 전송 전 readiness(권한 대기 시 confirm), 세션 자동 확보(claude -c 스폰), 초안 localStorage, 이미지 붙여넣기, ⏹=ESC 중단
+- `GET /api/claude/transcript?cwd=`: 최신 .jsonl tail(768KB) 파싱 → 버블 목록(사이드체인 제외, tool_use 칩, 연속 assistant 병합)
+- `ChatView.vue`: 3초 폴링 채팅 버블 + 자동 스크롤(위로 올리면 해제) + 컴포저. 워크스페이스 '💬 채팅' 모드. 터미널 모드에도 컴포저 부착
+**화면 분할**: 탭바 "분할" 토글 → 모든 탭 2열 그리드 동시 표시(터미널 전부 살아있음), 활성 페인 남색 테두리, localStorage 유지
+**디바이스**: `GET /api/devices` = adb devices -l + xcrun devicectl(LANG 지정으로 한글 기기명, 구분선 필터). `POST /api/devices/build-command` = Flutter/Capacitor/Gradle 감지 → 명령 생성 → 빌드 전용 터미널 탭으로 실행. 프로젝트 상세 DevicePanel(30초 갱신). 실기기 검증: SM-G977N + 아이폰 4대 감지됨
+**그래프 계층**: 관계 추가 시 방향 선택(⬇하위/⬆상위/↔연관, child 타입). graph.vue BFS 레벨 배치(모체👑 위→하위 아래, 화살표 실선, 연관은 점선), 비계층 노드는 하단 그리드
+**함정**: RealTerminal storageKey에 initialCommand suffix 추가(빌드탭↔일반셸 세션 충돌 방지). 워크스페이스 탭 컨테이너에 v-if(빈 상태 레이아웃)
+**상태**: 완료 (main 머지)
 
 ---
 

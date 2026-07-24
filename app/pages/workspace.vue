@@ -30,6 +30,16 @@ function launchIde(type: string, path: string) {
     body: { type, path },
   })
 }
+
+// ===== 화면 분할 (모든 열린 탭을 그리드로 동시 표시) =====
+const splitMode = ref(false)
+onMounted(() => {
+  splitMode.value = localStorage.getItem('cortex-split') === '1'
+})
+function toggleSplit() {
+  splitMode.value = !splitMode.value
+  localStorage.setItem('cortex-split', splitMode.value ? '1' : '0')
+}
 </script>
 
 <template>
@@ -60,21 +70,44 @@ function launchIde(type: string, path: string) {
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
       </button>
+
+      <!-- 화면 분할 토글 -->
+      <button
+        v-if="openTabs.length > 1"
+        @click="toggleSplit"
+        class="hidden lg:flex ml-auto px-3 py-2 items-center gap-1.5 text-xs transition-colors shrink-0"
+        :class="splitMode ? 'text-neon-indigo' : 'text-brain-muted hover:text-brain-text'"
+        :title="splitMode ? '단일 화면으로' : '모든 탭 분할 표시'"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 4v16m6-16v16M4 8h16M4 16h16" /></svg>
+        {{ splitMode ? '분할 중' : '분할' }}
+      </button>
     </div>
 
-    <!-- Tabs Content — all rendered, v-show switching (terminals stay alive) -->
+    <!-- Tabs Content — 전부 렌더 유지(터미널 생존). 분할 모드면 그리드로 동시 표시 -->
+    <div
+      v-if="openTabs.length"
+      class="flex-1 min-h-0"
+      :class="splitMode && openTabs.length > 1
+        ? 'grid grid-cols-1 lg:grid-cols-2 auto-rows-fr gap-2 p-2 overflow-y-auto'
+        : 'flex flex-col overflow-hidden'"
+    >
     <div
       v-for="tab in openTabs"
       :key="tab.id"
-      v-show="activeTabId === tab.id"
-      class="flex-1 overflow-y-auto p-4 sm:p-6"
+      v-show="splitMode || activeTabId === tab.id"
+      class="overflow-y-auto min-h-0"
+      :class="splitMode && openTabs.length > 1
+        ? 'rounded-xl border p-3 ' + (activeTabId === tab.id ? 'border-neon-indigo/40' : 'border-brain-border')
+        : 'flex-1 p-4 sm:p-6'"
+      @click="splitMode && (activeTabId = tab.id)"
     >
       <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-4">
         <div class="min-w-0">
-          <h2 class="text-lg sm:text-xl font-semibold truncate">{{ tab.name }}</h2>
-          <p class="text-xs text-brain-muted font-mono mt-0.5 truncate">{{ tab.path }}</p>
+          <h2 class="font-semibold truncate" :class="splitMode ? 'text-sm' : 'text-lg sm:text-xl'">{{ tab.name }}</h2>
+          <p v-if="!splitMode" class="text-xs text-brain-muted font-mono mt-0.5 truncate">{{ tab.path }}</p>
         </div>
-        <div class="flex items-center gap-2 overflow-x-auto shrink-0">
+        <div v-if="!splitMode" class="flex items-center gap-2 overflow-x-auto shrink-0">
           <button
             @click="launchIde('vscode', tab.path)"
             class="px-2.5 py-1.5 rounded-md text-xs bg-brain-card border border-brain-border hover:border-brain-border-light transition-colors whitespace-nowrap"
@@ -97,11 +130,18 @@ function launchIde(type: string, path: string) {
       <!-- Mode Toggle (per tab) -->
       <div class="flex gap-1.5 mb-4 overflow-x-auto">
         <button
+          @click="setTabMode(tab.id, 'chat')"
+          class="px-3 py-1.5 rounded-md text-xs sm:text-[13px] border transition-colors whitespace-nowrap"
+          :class="tab.mode === 'chat' ? 'bg-neon-indigo/15 text-neon-indigo border-neon-indigo/30' : 'border-brain-border text-brain-muted hover:text-brain-text'"
+        >
+          💬 채팅
+        </button>
+        <button
           @click="setTabMode(tab.id, 'claude')"
           class="px-3 py-1.5 rounded-md text-xs sm:text-[13px] border transition-colors whitespace-nowrap"
           :class="tab.mode === 'claude' ? 'bg-neon-indigo/15 text-neon-indigo border-neon-indigo/30' : 'border-brain-border text-brain-muted hover:text-brain-text'"
         >
-          🤖 Claude
+          🤖 터미널(Claude)
         </button>
         <button
           @click="setTabMode(tab.id, 'shell')"
@@ -133,7 +173,15 @@ function launchIde(type: string, path: string) {
         :project-path="tab.path"
         :project-name="tab.name"
         :start-claude="tab.mode === 'claude'"
-        :initial-command="tab.mode === 'claude' ? tab.command : undefined"
+        :initial-command="tab.command"
+      />
+
+      <!-- Native Chat -->
+      <ChatView
+        v-else-if="tab.mode === 'chat'"
+        :key="`chat-${tab.id}`"
+        :project-path="tab.path"
+        :project-name="tab.name"
       />
 
       <!-- Source Control / Review -->
@@ -151,6 +199,7 @@ function launchIde(type: string, path: string) {
         :project-path="tab.path"
         :project-name="tab.name"
       />
+    </div>
     </div>
 
     <!-- Empty state -->
